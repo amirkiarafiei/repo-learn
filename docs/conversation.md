@@ -1453,3 +1453,18 @@ Shall I create a requirements.txt file pinning the dependencies and a prototype_
 
 " feasibility in < 1 hour.
 
+---
+
+Here are some of my notes:
+
+The Hook: Scientific software suffers from a "Sustainability Crisis." Post-docs write code, leave, and the code dies because it’s undocumented. Researcher is Researcher, not Software Engineer. My paper proposes a solution to enhance reproducibility and software sustainability in science. The Deep Agent is just the method, not the goal. 
+
+I can use JOSS (The Journal of Open Source Software) codes which has lots of good examples of scientific software. Why this is smart: I can cite JOSS in my paper, proving these are recognized scientific tools, not just random GitHub junk. This validates my dataset immediately.
+
+3. The Methodology (Deep Agent vs. Baseline)
+Baseline: Standard ReAct Agent (e.g., typical LangChain/Smolagents implementation) or AutoGPT-style agent.
+Ours: Deep Agent (Hierarchical, Sub-agents, explicit file-system context, explicit planning).
+Hypothesis: Scientific code is often "spaghetti code" (monolithic scripts, poor structure). ReAct agents get lost in the context window. Deep Agents (via sub-agents) can isolate specific modules (e.g., data_loader.py vs simulation.py) and document them accurately without context overflow.
+
+For the tool demo paper, I can also include token and context and price analysis in my UI to see how much is used to generate tutorials. 
+
