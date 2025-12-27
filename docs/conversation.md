@@ -1468,3 +1468,11 @@ Hypothesis: Scientific code is often "spaghetti code" (monolithic scripts, poor 
 
 For the tool demo paper, I can also include token and context and price analysis in my UI to see how much is used to generate tutorials. 
 
+Risk Assessment & Mitigation
+Risk: The Deep Agent is too slow or expensive (tokens).
+Mitigation: In the e-Science paper, argue that documentation is a "one-time cost." Spending $5 to document a library is cheaper than a human spending 5 hours.
+Risk: e-Science reviewers say "This is just SE."
+Mitigation: In your introduction, explicitly cite the "FAIR Principles for Research Software" (Findable, Accessible, Interoperable, Reusable). Frame your tool as an Automated FAIR Enabler.
+Risk: Tool track reviewers say "GitHub Copilot already does this."
+Mitigation: Copilot explains snippets. Your tool generates comprehensive, structured guides (tutorials) and allows maintainers to generate the official docs for the whole repo at once. It's a "Repository-level" tool, not a "Completion" tool.
+
