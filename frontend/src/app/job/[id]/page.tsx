@@ -23,6 +23,7 @@ function JobPageContent() {
     const {
         messages,
         todos,
+        subagents,
         isLoading,
         error,
         threadId,
@@ -104,7 +105,7 @@ function JobPageContent() {
             {/* Error display */}
             {error && (
                 <div className="bg-red-900/20 border-b border-red-800 px-6 py-3 text-sm text-red-400">
-                    Error: {error.message}
+                    Error: {(error as Error)?.message || String(error)}
                 </div>
             )}
 
@@ -122,7 +123,7 @@ function JobPageContent() {
 
                 {/* Right Panel: Sub-agents Grid (3 cols) */}
                 <div className="col-span-3 min-h-0">
-                    <GridPanel subagents={[]} isLoading={isLoading || (hasStarted && messages.length === 0)} />
+                    <GridPanel subagents={subagents} isLoading={isLoading || (hasStarted && messages.length === 0)} />
                 </div>
             </div>
 
