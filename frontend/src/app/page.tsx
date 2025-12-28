@@ -78,10 +78,10 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="border-b border-zinc-800/50 px-4 py-2 glass sticky top-0 z-40">
+      <header className="border-b border-zinc-800/50 px-4 py-2 bg-black sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <h1 className="text-lg font-bold tracking-tight">
-            <span className="text-blue-500">Repo</span>
+            <span className="text-blue-600">Repo</span>
             <span className="text-white">Learn</span>
           </h1>
           <nav className="flex items-center gap-3">
@@ -123,7 +123,7 @@ export default function Home() {
           <div className="pt-4 flex items-center justify-center gap-4">
             <Link
               href="/new"
-              className="group inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-400 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover-lift"
+              className="group inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover-lift"
             >
               Get Started
               <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -155,12 +155,12 @@ export default function Home() {
               <div className="flex items-center gap-6 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/50"></div>
-                  <span className="text-zinc-400">Tutorials</span>
+                  <span className="text-zinc-400">Docs</span>
                   <span className="font-mono text-zinc-200">{storage.stats.tutorialsSize}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50"></div>
-                  <span className="text-zinc-400">Cache</span>
+                  <span className="text-zinc-400">Code</span>
                   <span className="font-mono text-zinc-200">{storage.stats.reposSize}</span>
                 </div>
                 <div className="px-3 py-1 rounded-lg bg-zinc-800/50 border border-zinc-700">
@@ -202,14 +202,14 @@ export default function Home() {
                         </h4>
                         <div className="flex items-center gap-2 mt-2">
                           {/* Docs badge - always present if tutorial exists */}
-                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                             Docs
                           </span>
                           {/* Code badge - only if repo is cached */}
                           {storage.repos.includes(id) ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                               Code
                             </span>
                           ) : (
@@ -242,31 +242,25 @@ export default function Home() {
                   {openMenu === id && (
                     <div
                       ref={menuRef}
-                      className="absolute top-12 right-4 z-20 w-56 rounded-xl border border-zinc-600 bg-zinc-900 shadow-2xl py-2 animate-fade-in"
+                      className="absolute top-12 right-4 z-50 w-44 rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl py-1 animate-fade-in"
                     >
                       {storage.repos.includes(id) && (
                         <button
                           type="button"
                           onClick={() => handleDelete(id, "cache")}
-                          className="w-full text-left px-4 py-2.5 text-sm text-zinc-200 hover:bg-zinc-800 flex items-center gap-3 transition-colors"
+                          className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                         >
-                          <span className="text-amber-400">🗑️</span>
-                          <div>
-                            <div className="font-medium">Clear Code Cache</div>
-                            <div className="text-xs text-zinc-400">Keep docs, remove cloned repo</div>
-                          </div>
+                          <span className="text-amber-400">🗑</span>
+                          Delete Code
                         </button>
                       )}
                       <button
                         type="button"
                         onClick={() => handleDelete(id, "all")}
-                        className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-zinc-800 flex items-center gap-3 transition-colors"
+                        className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                       >
-                        <span>⚠️</span>
-                        <div>
-                          <div className="font-medium">Delete All</div>
-                          <div className="text-xs text-red-300/70">Remove docs and code cache</div>
-                        </div>
+                        <span>✕</span>
+                        Delete All
                       </button>
                     </div>
                   )}
