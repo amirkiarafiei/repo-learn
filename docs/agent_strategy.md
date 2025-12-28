@@ -1,5 +1,22 @@
 # Deep Agent Strategy: The "Analyst-Architect" Workflow
 
+## 0. Strategic Vision & Purpose
+**RepoLearn** is not just a documentation generator; it is a research instrument designed to prove that **Hierarchical AI Agents ("Deep Agents")** are superior to flat/monolithic models for comprehending large-scale software systems.
+
+### The Problem
+Traditional LLMs and simple ReAct agents fail at large codebases because:
+1.  **Context Overflow**: They cannot "read" a repository with 100k+ lines of code in one go.
+2.  **Attention Drift**: When an agent gets deep into debugging a specific function, it "forgets" the high-level architecture.
+3.  **Black Box Reasoning**: Users receive a final output but have no confidence in *why* or *how* the AI reached its conclusions.
+
+### The RepoLearn Solution
+Our goal is to mimic the workflow of a **Senior Staff Engineer (The Architect)** leading a team of **Junior Contractors (The Analysts)**.
+*   **Top-Down Cognition**: We do not parse code line-by-line from the start. We first "survey the land" (Phase 1) to build a mental map.
+*   **Recursion with Purpose**: We solve the context problem by breaking the repository into modular "black boxes" that specialized sub-agents solve independently. The Main Agent only deals with the *outputs* of these boxes, not their *contents*.
+*   **Radical Transparency**: Unlike closed tools (DeepWiki, Copilot), RepoLearn visualizes this mental process. We *want* the user to see the agent pausing to plan, delegating a task to a sub-agent, and reviewing the work. This visibility builds trust and proves the scientific validity of the Deep Agent methodology.
+
+---
+
 ## 1. Core Philosophy
 The RepoLearn Deep Agent operates on the **"Analyst-Architect"** principle.
 *   **The Architect (Main Agent)**: Responsible for high-level understanding, strategic planning, and synthesizing the final output. It avoids "dirty work" (reading thousands of lines of code) to keep its context window clean and focused.
