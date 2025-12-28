@@ -78,18 +78,29 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="border-b border-zinc-800/50 px-6 py-4 glass sticky top-0 z-40">
+      <header className="border-b border-zinc-800/50 px-4 py-2 glass sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight">
-            <span className="gradient-text">Repo</span>
-            <span className="text-zinc-100">Learn</span>
+          <h1 className="text-lg font-bold tracking-tight">
+            <span className="text-blue-500">Repo</span>
+            <span className="text-white">Learn</span>
           </h1>
-          <nav className="flex items-center gap-4">
+          <nav className="flex items-center gap-3">
+            <a
+              href="https://github.com/amirkiarafiei/repo-learn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-200 text-sm transition-all"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+              </svg>
+              GitHub
+            </a>
             <Link
               href="/new"
-              className="group flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all hover-lift"
+              className="group flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover-lift"
             >
-              <span className="text-lg transition-transform group-hover:rotate-90">+</span>
+              <span className="text-base transition-transform group-hover:rotate-90">+</span>
               Add Repository
             </Link>
           </nav>
@@ -97,40 +108,34 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-        <div className="max-w-3xl text-center space-y-8 animate-fade-in">
-          {/* Floating badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm text-zinc-300 animate-float">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-            Powered by Deep Agents
-          </div>
-
-          <h2 className="text-5xl sm:text-6xl font-bold tracking-tight leading-tight">
+      <section className="flex-1 flex flex-col items-center justify-center px-6 py-16">
+        <div className="max-w-3xl text-center space-y-6 animate-fade-in">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight">
             AI-powered tutorials from{" "}
             <span className="gradient-text">any codebase</span>
           </h2>
 
-          <p className="text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
             Give RepoLearn a GitHub URL, watch it analyze the code in real-time,
             and get beginner-friendly tutorials tailored for users or developers.
           </p>
 
-          <div className="pt-6 flex items-center justify-center gap-4">
+          <div className="pt-4 flex items-center justify-center gap-4">
             <Link
               href="/new"
-              className="group inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all hover-lift animate-pulse-glow"
+              className="group inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-400 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover-lift"
             >
               Get Started
-              <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </Link>
           </div>
 
           {/* Feature badges */}
-          <div className="flex flex-wrap justify-center gap-4 pt-8">
-            {["Real-time Progress", "Multi-Agent System", "Markdown Export"].map((feature) => (
-              <div key={feature} className="px-4 py-2 rounded-lg bg-zinc-900/50 border border-zinc-800 text-sm text-zinc-400">
+          <div className="flex flex-wrap justify-center gap-3 pt-6">
+            {["Real-Time Visualization", "Deep Agent Architecture", "Markdown Export"].map((feature) => (
+              <div key={feature} className="px-3 py-1.5 rounded-lg bg-zinc-900/50 border border-zinc-800 text-xs text-zinc-400">
                 {feature}
               </div>
             ))}
@@ -196,15 +201,21 @@ export default function Home() {
                           {formatName(id)}
                         </h4>
                         <div className="flex items-center gap-2 mt-2">
+                          {/* Docs badge - always present if tutorial exists */}
+                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            Docs
+                          </span>
+                          {/* Code badge - only if repo is cached */}
                           {storage.repos.includes(id) ? (
                             <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              Cached
+                              Code
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-800 text-zinc-500 text-xs">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-800/50 border border-zinc-700 text-zinc-500 text-xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
-                              No cache
+                              No Code
                             </span>
                           )}
                         </div>
@@ -231,30 +242,30 @@ export default function Home() {
                   {openMenu === id && (
                     <div
                       ref={menuRef}
-                      className="absolute top-12 right-4 z-20 w-52 rounded-xl border border-zinc-700 bg-zinc-800 shadow-2xl py-2 animate-fade-in"
+                      className="absolute top-12 right-4 z-20 w-56 rounded-xl border border-zinc-600 bg-zinc-900 shadow-2xl py-2 animate-fade-in"
                     >
                       {storage.repos.includes(id) && (
                         <button
                           type="button"
                           onClick={() => handleDelete(id, "cache")}
-                          className="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-3 transition-colors"
+                          className="w-full text-left px-4 py-2.5 text-sm text-zinc-200 hover:bg-zinc-800 flex items-center gap-3 transition-colors"
                         >
                           <span className="text-amber-400">🗑️</span>
                           <div>
-                            <div>Clear Cache</div>
-                            <div className="text-xs text-zinc-500">Keep tutorial, remove repo</div>
+                            <div className="font-medium">Clear Code Cache</div>
+                            <div className="text-xs text-zinc-400">Keep docs, remove cloned repo</div>
                           </div>
                         </button>
                       )}
                       <button
                         type="button"
                         onClick={() => handleDelete(id, "all")}
-                        className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-3 transition-colors"
+                        className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-zinc-800 flex items-center gap-3 transition-colors"
                       >
                         <span>⚠️</span>
                         <div>
-                          <div>Delete All</div>
-                          <div className="text-xs text-red-400/60">Remove tutorial and cache</div>
+                          <div className="font-medium">Delete All</div>
+                          <div className="text-xs text-red-300/70">Remove docs and code cache</div>
                         </div>
                       </button>
                     </div>
@@ -267,15 +278,29 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800/50 px-6 py-8">
+      <footer className="border-t border-zinc-800/50 px-6 py-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-zinc-500">
             RepoLearn — Deep Agents for Codebase Understanding
           </div>
-          <div className="flex items-center gap-4 text-sm text-zinc-600">
-            <span>Built with LangGraph</span>
-            <span>•</span>
-            <span>Powered by OpenRouter</span>
+          <div className="flex items-center gap-4 text-sm">
+            <a
+              href="https://www.amirkia.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-400 hover:text-blue-400 transition-colors"
+            >
+              www.amirkia.tech
+            </a>
+            <span className="text-zinc-700">•</span>
+            <a
+              href="https://scholar.google.com/citations?user=9geFFmwAAAAJ&hl=en"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-400 hover:text-blue-400 transition-colors"
+            >
+              Google Scholar
+            </a>
           </div>
         </div>
       </footer>
