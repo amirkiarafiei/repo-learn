@@ -17,9 +17,16 @@ The system follows a flat, service-oriented architecture:
 
 ```text
 repo-learn/
-├── frontend/           # Next.js 14 Application
-├── backend/            # LangGraph Agent Engine + FastAPI Sidecar
-└── data/               # Local filesystem storage
+├── frontend/               # Next.js 15 + Tailwind v4 Application
+├── backend/                # LangGraph Agent Engine + FastAPI Sidecar
+│   ├── agent/              # DeepAgent logic (graph.py, tools.py, prompts.py)
+│   └── api/                # FastAPI Sidecar (for file operations)
+└── data/                   # Local filesystem storage
+    ├── repositories/       # Cloned repos from GitHub
+    └── tutorials/          # Generated tutorials per repo
+        └── {repo_name}/    # e.g., "langchain-ai_deepagents"
+            ├── user/       # Tutorials for end-users
+            └── dev/        # Tutorials for developers/maintainers
 ```
 
 ### 2.1 Components
@@ -33,8 +40,9 @@ To ensure robust, real-time updates and sub-agent differentiation, we utilize La
 *   **Event Routing**: Events are streamed as tuples `(namespace, data)`.
     *   **Main Agent**: `namespace=()` (empty).
     *   **Sub-Agent**: `namespace=('task_tool', 'subagent_name')`.
-*   **Persistence**: All agent states are stored in a Postgres/SQLite database managed by LangGraph.
-    *   **Reconnection**: The Frontend URL contains a `thread_id` (e.g., `/job/uuid-123`). On page refresh, the frontend reconnects to this thread and hydrates the state from the DB checkpoint.
+*   **Persistence**: For MVP, LangGraph uses in-memory/file-based checkpointing (no database required). State is preserved via pickle files during `langgraph dev` sessions.
+    *   **Reconnection**: The Frontend URL contains a `thread_id` (e.g., `/job/uuid-123`). On page refresh, the frontend reconnects to this thread and hydrates the state from the checkpoint.
+    *   **Production**: For production deployments, LangGraph can use Postgres for persistent state storage.
 
 ## 2.3 Error Handling & Resilience
 *   **Retry Logic**: Critical nodes (e.g., `GitClone`, API calls) must implement `retry_policy` (exponential backoff) to handle transient failures.

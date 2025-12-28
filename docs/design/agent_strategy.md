@@ -79,7 +79,7 @@ The RepoLearn Deep Agent operates on the **"Analyst-Architect"** principle.
     1.  Review all accumulated knowledge.
     2.  Structure the final tutorial modules based on the requested order (e.g., `1_DataLayer.md`, `2_API_Guide.md`).
     3.  **Write Files**: The Main Agent essentially acts as a Technical Editor, stitching together the sub-agent findings into a coherent narrative, adding transitions, and ensuring tone consistency.
-*   **Outcome**: A set of `{order}_{title}.md` files in `data/knowledge_bases/{repo_name}/`.
+*   **Outcome**: A set of `{order}_{title}.md` files in `data/tutorials/{repo_name}/{audience}/` where `{audience}` is either `user` or `dev`.
 
 ## 3. Sub-Agent Handling Policies
 *   **Parallelism**: If the Main Agent realizes two tasks are independent (e.g., "Analyze Backend" and "Analyze Frontend"), it *can* spawn two sub-agents simultaneously (feature dependent on LangGraph capability, otherwise sequential is safer for MVP).

@@ -74,8 +74,11 @@ repo-learn/
 │   └── datasets/               # Contamination-free repos
 │
 ├── data/                       # Shared Local Storage (The "Memory")
-│   ├── repositories/           # Cloned user repos
-│   └── knowledge_bases/        # Generated markdown files
+│   ├── repositories/           # Cloned repos from GitHub
+│   └── tutorials/              # Generated tutorials per repo
+│       └── {repo_name}/        # e.g., "langchain-ai_deepagents"
+│           ├── user/           # Tutorials for end-users
+│           └── dev/            # Tutorials for developers/maintainers
 │
 └── docs/                       # Paper drafts, SRS, Reports
 ```
