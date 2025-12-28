@@ -1,0 +1,7 @@
+# Data directories - these contain downloaded/generated content
+repositories/
+tutorials/
+
+# But keep the .gitkeep files
+!repositories/.gitkeep
+!tutorials/.gitkeep

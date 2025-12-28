@@ -1,0 +1,20 @@
+[project]
+name = "repolearn-backend"
+version = "0.1.0"
+description = "RepoLearn Deep Agent Backend"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "deepagents>=0.3.1",
+    "langchain-openai>=1.1.6",
+    "langgraph-cli[inmem]>=0.4.11",
+    "python-dotenv>=1.2.1",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent*", "api*"]
