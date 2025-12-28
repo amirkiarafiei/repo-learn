@@ -113,3 +113,12 @@ This is the core differentiator for the "Demo" track.
     *   *Role*: Quality Assurance. It monitors the Deep Agent's output against the original requirements.
     *   *Action*: If the Deep Agent stops too early or produces shallow content, the Manager intervenes and issues corrective prompts.
     *   *UI Impact*: The visualization would expand to show a "Conversation Pool" between Manager, Deep Agent, and Sub-agents.
+
+### 7.3 Operational Features
+*   **Cost Estimation & Transparency**:
+    *   **Pre-Flight Check**: Before starting, calculate an estimated cost based on repository token count (using `tiktoken`) and selected model pricing.
+    *   **Live Metrics**: Display real-time token usage and accrued cost in the "Live Progress" dashboard.
+    *   **Configuration**: Allow users to configure model selection (UI/env) and manually input their API cost-per-million tokens for accurate estimation.
+*   **Resumability & Fault Tolerance**:
+    *   **Checkpointing**: If the process is halted (user cancellation or error), the system should detect existing progress (generated markdown files, completed TODOs) upon restart.
+    *   **Recovery**: The agent should skip already-completed phases or files rather than restarting from scratch.
