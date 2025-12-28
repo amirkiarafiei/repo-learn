@@ -27,6 +27,9 @@ export interface SubagentStatus {
     name: string;
     status: "running" | "done" | "error";
     currentTask?: string;
+    startedAt?: Date;
+    completedAt?: Date;
+    activityLogs: string[]; // Last few log lines from this subagent
 }
 
 interface UseAgentStreamOptions {
@@ -35,10 +38,10 @@ interface UseAgentStreamOptions {
 }
 
 // The full state type including todos from TodoListMiddleware
-interface AgentState {
-    messages: Message[];
+type AgentState = Record<string, unknown> & {
+    messages?: Message[];
     todos?: Todo[];
-}
+};
 
 export function useAgentStream(options: UseAgentStreamOptions = {}) {
     const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_URL || "http://localhost:2024";
@@ -46,8 +49,11 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
     // Thread management - start with null if no initial thread
     const [threadId, setThreadId] = useState<string | null>(options.initialThreadId ?? null);
 
-    // Track todos separately since they come from updates
+    // Track todos from updates
     const [todos, setTodos] = useState<Todo[]>([]);
+
+    // Track subagent status by detecting task tool calls
+    const [subagents, setSubagents] = useState<Map<string, SubagentStatus>>(new Map());
 
     const stream = useStream<AgentState>({
         apiUrl,
@@ -55,9 +61,8 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
         threadId: threadId,
         onThreadId: setThreadId,
         messagesKey: "messages",
-        // Capture todos from graph updates
+        // Capture todos and subagent activity from graph updates
         onUpdateEvent: (update) => {
-            // Update contains the state values from each node
             if (update && typeof update === 'object') {
                 const updateObj = update as Record<string, unknown>;
                 // Check if this update contains todos
@@ -67,24 +72,60 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
             }
         },
         onFinish: (state) => {
-            // Also extract todos from final state
-            if (state?.todos) {
-                setTodos(state.todos);
+            // Extract todos from final state
+            const stateObj = state as unknown as AgentState | undefined;
+            if (stateObj?.todos) {
+                setTodos(stateObj.todos);
             }
+            // Mark all subagents as done
+            setSubagents(prev => {
+                const updated = new Map(prev);
+                updated.forEach((agent, name) => {
+                    updated.set(name, { ...agent, status: "done" });
+                });
+                return updated;
+            });
             options.onComplete?.();
         },
     });
 
-    // Transform raw messages to our AgentMessage format
+    // Transform raw messages to our AgentMessage format and detect subagent activity
     const messages = useMemo((): AgentMessage[] => {
         if (!stream.messages) return [];
 
-        return stream.messages.map((msg) => {
-            // Cast to access all properties
+        const result: AgentMessage[] = [];
+        const activeSubagents = new Map<string, SubagentStatus>();
+
+        for (const msg of stream.messages) {
             const rawMsg = msg as unknown as Record<string, unknown>;
             const toolCalls = rawMsg.tool_calls as Array<{ name: string; args: Record<string, unknown> }> | undefined;
 
-            return {
+            // Detect task tool calls (subagent delegation)
+            if (toolCalls) {
+                for (const tc of toolCalls) {
+                    if (tc.name === "task") {
+                        const subagentType = tc.args.subagent_type as string;
+                        const description = tc.args.description as string;
+                        if (subagentType) {
+                            activeSubagents.set(subagentType, {
+                                name: subagentType,
+                                status: "running",
+                                currentTask: description?.slice(0, 100) || "Working...",
+                                startedAt: new Date(),
+                                activityLogs: [`Started: ${description?.slice(0, 60) || "Analyzing..."}...`],
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Detect tool results from task (subagent completion)
+            if (rawMsg.type === "tool" && rawMsg.name === "task") {
+                // A task tool result means a subagent completed
+                // We can't easily match which one, so leave them running until onFinish
+            }
+
+            result.push({
                 id: (rawMsg.id as string) || crypto.randomUUID(),
                 type: (rawMsg.type as "human" | "ai" | "tool") || "ai",
                 content: typeof rawMsg.content === "string" ? rawMsg.content : JSON.stringify(rawMsg.content || ""),
@@ -94,22 +135,44 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
                     args: tc.args,
                 })),
                 timestamp: new Date(),
-            };
-        });
+            });
+        }
+
+        // Update subagent state if we detected new ones
+        if (activeSubagents.size > 0) {
+            setSubagents(prev => {
+                const updated = new Map(prev);
+                activeSubagents.forEach((agent, name) => {
+                    // Only update if new or was done (re-running)
+                    if (!updated.has(name) || updated.get(name)?.status === "done") {
+                        updated.set(name, agent);
+                    }
+                });
+                return updated;
+            });
+        }
+
+        return result;
     }, [stream.messages]);
 
-    // Also try to get todos from stream.values as fallback
+    // Get todos from state or fallback
     const currentTodos = useMemo((): Todo[] => {
-        // First check our state
         if (todos.length > 0) return todos;
-        // Fallback to values
         const values = stream.values as AgentState | undefined;
         return values?.todos || [];
     }, [todos, stream.values]);
 
+    // Convert subagents map to array
+    const subagentsList = useMemo((): SubagentStatus[] => {
+        return Array.from(subagents.values());
+    }, [subagents]);
+
     // Submit a new analysis request with optimistic thread creation
     const submitAnalysis = useCallback((githubUrl: string, audience: "user" | "dev" = "dev") => {
-        // Generate a thread ID if we don't have one yet
+        // Reset state for new analysis
+        setTodos([]);
+        setSubagents(new Map());
+
         const newThreadId = threadId ?? crypto.randomUUID();
 
         stream.submit(
@@ -121,7 +184,6 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
                     },
                 ],
             },
-            // Pass the threadId to create the thread optimistically
             { threadId: newThreadId }
         );
     }, [stream, threadId]);
@@ -130,6 +192,7 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
         // State
         messages,
         todos: currentTodos,
+        subagents: subagentsList,
         isLoading: stream.isLoading,
         error: stream.error,
         threadId: threadId,
