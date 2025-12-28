@@ -100,3 +100,131 @@ To enforce this behavior, the System Prompt must be rigid:
 *   **Role**: A high-level ReAct agent that does *not* do work but *monitors* the Deep Agent.
 *   **Function**: It observes the Deep Agent's output. If the Deep Agent attempts to quit early or produces conflicting plans, the Supervisor intervenes with corrective instructions.
 *   **Loop**: `Supervisor -> Observes Deep Agent -> Evaluating Progress -> Corrects/Approves`.
+
+---
+
+## 6. Implementation Status (MVP Realized)
+
+This section documents how the strategy above was implemented in the RepoLearn codebase.
+
+### 6.1 Phase Mapping to Code
+
+| Strategic Phase    | Implementation          | Key Files                    |
+| ------------------ | ----------------------- | ---------------------------- |
+| Phase 0: Setup     | `git_clone` tool        | `backend/agent/tools.py`     |
+| Phase 1: Discovery | Part of BRAIN_PROMPT    | `backend/agent/graph.py`     |
+| Phase 2: Planning  | `TodoListMiddleware`    | Built into DeepAgents        |
+| Phase 3: Execution | `task` tool + subagents | `backend/agent/subagents.py` |
+| Phase 4: Synthesis | `write_file` tool       | Built into DeepAgents        |
+
+### 6.2 The Implemented Subagents
+
+```python
+# backend/agent/subagents.py
+
+code_analyzer = {
+    "name": "code-analyzer",
+    "description": "Deep analysis of specific code files or modules",
+    "system_prompt": """You are a Code Analyzer. Your job:
+    1. Read the specified files thoroughly
+    2. Identify key components, patterns, and architecture
+    3. Summarize findings for the Lead Architect
+    
+    Be technical and precise. Your output informs tutorial creation.""",
+    "tools": [],  # Inherits filesystem tools
+}
+
+doc_writer = {
+    "name": "doc-writer",
+    "description": "Creates user-friendly documentation and tutorials",
+    "system_prompt": """You are a Documentation Writer. Your job:
+    1. Take technical summaries from the Lead Architect
+    2. Transform them into beginner-friendly tutorials
+    3. Use clear language, examples, and diagrams
+    
+    Output well-structured Markdown.""",
+    "tools": [],
+}
+
+SUBAGENTS = [code_analyzer, doc_writer]
+```
+
+### 6.3 The BRAIN_PROMPT (Main Agent)
+
+The system prompt enforces the Analyst-Architect pattern:
+
+```python
+BRAIN_PROMPT = """
+You are the Lead Architect for RepoLearn, a tool that generates 
+beginner-friendly tutorials from codebases.
+
+## YOUR MANDATORY WORKFLOW (FOLLOW EXACTLY):
+
+1. **Clone the repository** using `git_clone(github_url)`
+2. **Get paths** using `get_repo_path()` and `get_tutorial_path()`
+3. **Create a plan** using `write_todos` (3-6 focused items)
+4. **Delegate to code-analyzer** for technical analysis
+5. **Delegate to doc-writer** for tutorial creation
+6. **Synthesize** final tutorials combining all outputs
+
+## CRITICAL RULES:
+- You MUST use BOTH subagents (code-analyzer AND doc-writer)
+- You NEVER read source code directly - delegate instead
+- You only review summaries from subagents
+- Write final tutorials to the tutorial path
+
+## SUBAGENT USAGE:
+- task(subagent_type="code-analyzer", description="...")
+- task(subagent_type="doc-writer", description="...")
+"""
+```
+
+### 6.4 Frontend Visualization Mapping
+
+| Strategy Concept  | UI Component       | Implementation               |
+| ----------------- | ------------------ | ---------------------------- |
+| TODO List         | `PlannerPanel.tsx` | Progress bar, colored status |
+| Agent Thoughts    | `BrainPanel.tsx`   | Color-coded message stream   |
+| Subagent Activity | `GridPanel.tsx`    | Accordion cards with logs    |
+| Final Output      | Tutorial Viewer    | Markdown rendering           |
+
+### 6.5 Context Isolation in Practice
+
+Subagents receive:
+1. Their specialized system prompt
+2. The task description from the main agent
+3. Access to filesystem tools (read, write, ls, grep)
+
+They do NOT receive:
+- The main agent's conversation history
+- Other subagents' outputs
+- The full TODO list
+
+This isolation is automatic via `SubAgentMiddleware`.
+
+### 6.6 Lessons Learned
+
+1. **Prompt Rigidity is Essential**: Without explicit "MUST delegate" language, the main agent would read files directly, defeating the hierarchical purpose.
+
+2. **Subagent Detection Workaround**: The SDK doesn't expose subagent events cleanly, so we detect `task` tool calls in the message stream.
+
+3. **File-Based Communication**: For large analyses, subagents should write to files rather than return massive strings (prevents token bloat).
+
+4. **User Trust Through Transparency**: Showing the TODO list, agent thoughts, and subagent cards builds confidence in the AI's reasoning.
+
+---
+
+## 7. Research Implications
+
+RepoLearn serves as a proof-of-concept for:
+
+1. **Hierarchical AI Architecture**: Demonstrating that main + sub-agent patterns scale better than monolithic prompting.
+
+2. **Context Window Management**: By delegating deep reads to disposable subagents, the main agent maintains strategic focus.
+
+3. **Explainable AI**: The 3-panel UI makes the agent's decision-making process visible and auditable.
+
+4. **Human-AI Collaboration**: The TODO list pattern aligns AI work with human expectations of progress.
+
+These findings support the thesis that **Deep Agents** (agents with planning, delegation, and hierarchical structure) are superior to flat models for complex, context-heavy tasks like codebase understanding.
+

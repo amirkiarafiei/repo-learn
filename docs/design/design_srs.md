@@ -149,3 +149,164 @@ This is the core differentiator for the "Demo" track.
 *   **Resumability & Fault Tolerance**:
     *   **Checkpointing**: If the process is halted (user cancellation or error), the system should detect existing progress (generated markdown files, completed TODOs) upon restart.
     *   **Recovery**: The agent should skip already-completed phases or files rather than restarting from scratch.
+
+---
+
+## 8. Implementation Notes (MVP Status)
+
+This section documents how the SRS requirements were realized in the MVP.
+
+### 8.1 Requirements Traceability Matrix
+
+| Requirement                | Status     | Implementation                                |
+| -------------------------- | ---------- | --------------------------------------------- |
+| **3.1 User Workflow**      | ✅ Complete | Home → New → Job → Tutorial pages             |
+| **3.2 Deep Agent**         | ✅ Complete | `graph.py` with BRAIN_PROMPT                  |
+| **3.2 TodoListMiddleware** | ✅ Complete | Built into DeepAgents                         |
+| **3.2 SubAgentMiddleware** | ✅ Complete | `subagents.py` definitions                    |
+| **3.2 Event Streaming**    | ✅ Complete | `useAgentStream.ts` hook                      |
+| **3.3 Sidecar API**        | ⚠️ Partial  | API routes in Next.js instead of FastAPI      |
+| **4.1 3-Panel Layout**     | ✅ Complete | PlannerPanel, BrainPanel, GridPanel           |
+| **4.2 Tutorial Viewer**    | ✅ Complete | Markdown + Typography plugin                  |
+| **5 Non-Functional**       | ✅ Complete | SSE streaming, thread persistence, dark theme |
+| **7.1 Advanced UI**        | ⏳ Deferred | Semantic updates, chat interface              |
+| **7.2 Manager Layer**      | ⏳ Deferred | Supervisor agent                              |
+| **7.3 Cost Estimation**    | ⏳ Deferred | Token counting, live metrics                  |
+| **7.3 Resumability**       | ⏳ Deferred | Skip completed phases                         |
+
+### 8.2 Architecture Deviation: Sidecar vs API Routes
+
+The original SRS specified a separate FastAPI sidecar. In the MVP, we use **Next.js API Routes** instead:
+
+**Rationale:**
+- Simpler deployment (single frontend process)
+- No CORS configuration needed
+- Faster development iteration
+
+**Implemented Routes:**
+```
+/api/tutorials         GET    List all tutorials
+/api/tutorials/[id]    GET    Get tutorial content
+/api/storage           GET    Storage stats
+/api/storage           DELETE Delete tutorial/cache
+```
+
+### 8.3 Streaming Implementation Details
+
+The `useAgentStream` hook wraps `@langchain/langgraph-sdk/react`:
+
+```typescript
+interface UseAgentStreamReturn {
+  // From LangGraph SDK
+  messages: AgentMessage[];
+  isLoading: boolean;
+  error: Error | null;
+  submit: (input: string) => void;
+  stop: () => void;
+  
+  // Custom additions
+  todos: Todo[];
+  subagents: SubagentStatus[];
+  threadId: string;
+}
+```
+
+### 8.4 State Interfaces
+
+```typescript
+// Todo item from TodoListMiddleware
+interface Todo {
+  content: string;
+  status: "pending" | "in_progress" | "completed";
+}
+
+// Subagent tracking (derived from task tool calls)
+interface SubagentStatus {
+  name: string;
+  status: "working" | "done" | "error";
+  currentTask: string;
+  startedAt: Date;
+  completedAt?: Date;
+  activityLogs: string[];
+}
+```
+
+### 8.5 Premium UI Implementation
+
+The CSS system provides:
+
+| Class               | Effect                              |
+| ------------------- | ----------------------------------- |
+| `.glass`            | Glassmorphism (blur + transparency) |
+| `.skeleton`         | Shimmer loading animation           |
+| `.hover-lift`       | Lift on hover with shadow           |
+| `.gradient-text`    | Blue-purple gradient text           |
+| `.stagger-children` | Cascading fade-in animation         |
+| `.animate-fade-in`  | Simple fade-in                      |
+| `.typing-cursor`    | Blinking cursor effect              |
+
+### 8.6 Data Storage Structure
+
+```
+data/
+├── repositories/                # Git clones (cache)
+│   ├── unjs_destr/
+│   ├── sindresorhus_is/
+│   └── ...
+└── tutorials/                   # Generated content
+    ├── unjs_destr/
+    │   └── user/
+    │       └── 0_overview.md
+    ├── sindresorhus_is/
+    │   └── user/
+    │       └── 0_overview.md
+    └── ...
+```
+
+### 8.7 Environment Configuration
+
+**Backend (`backend/.env`):**
+```env
+OPENROUTER_API_KEY=sk-or-v1-...
+```
+
+**Frontend (`frontend/.env.local`):**
+```env
+NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
+```
+
+### 8.8 Known Limitations
+
+1. **No User Authentication**: All tutorials are public/local
+2. **No Rate Limiting**: API routes are unprotected
+3. **In-Memory Checkpoints**: LangGraph dev mode only
+4. **Single Model**: No model selection UI
+5. **No Edit Mode**: Tutorial viewer is read-only
+
+---
+
+## 9. Acceptance Criteria Validation
+
+### 9.1 Functional Acceptance
+
+| Criteria                          | Validation                           |
+| --------------------------------- | ------------------------------------ |
+| User can input GitHub URL         | ✅ `/new` page with form              |
+| User can select audience          | ✅ User/Developer toggle              |
+| User can see live progress        | ✅ 3-panel layout with streaming      |
+| User can view generated tutorials | ✅ Tutorial viewer with sidebar       |
+| Tutorials are persisted           | ✅ Markdown files in `data/tutorials` |
+
+### 9.2 Non-Functional Acceptance
+
+| Criteria                | Validation                 |
+| ----------------------- | -------------------------- |
+| Real-time updates       | ✅ SSE via LangGraph SDK    |
+| Reconnection on refresh | ✅ Thread ID in URL         |
+| Premium dark theme      | ✅ Tailwind + glassmorphism |
+| Responsive layout       | ✅ Grid-based panels        |
+
+---
+
+*Document updated: December 28, 2024*
+

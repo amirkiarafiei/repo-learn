@@ -413,3 +413,207 @@ async for chunk in agent.astream(
     namespace, mode, data = chunk
     # Process events...
 ```
+
+---
+
+## 11. Implementation Notes (RepoLearn Learnings)
+
+This section captures key learnings from building RepoLearn with the DeepAgents library.
+
+### 11.1 Frontend Stream Processing
+
+The `useStream` hook from `@langchain/langgraph-sdk/react` handles most complexity, but extracting specific data requires custom logic:
+
+```typescript
+// Custom hook wrapper for RepoLearn
+export function useAgentStream(threadId: string) {
+  const stream = useStream<AgentState>({
+    apiUrl: LANGGRAPH_URL,
+    threadId,
+    streamMode: ["messages", "updates"],
+    assistantId: "agent",
+  });
+
+  // Extract todos from stream values (state updates)
+  const todos = useMemo(() => {
+    const values = stream.values;
+    if (values && "todos" in values) {
+      return values.todos as Todo[];
+    }
+    return [];
+  }, [stream.values]);
+
+  // Detect subagent spawning from task tool calls
+  const [subagents, setSubagents] = useState<Map<string, SubagentStatus>>(new Map());
+  
+  // Watch for task tool calls in messages
+  useEffect(() => {
+    for (const msg of stream.messages) {
+      if (msg.role === "assistant" && msg.tool_calls) {
+        for (const tc of msg.tool_calls) {
+          if (tc.name === "task") {
+            const subagentType = tc.args.subagent_type;
+            // Add to subagents map...
+          }
+        }
+      }
+    }
+  }, [stream.messages]);
+
+  return { ...stream, todos, subagents };
+}
+```
+
+### 11.2 Subagent Tracking Without `subgraphs=True`
+
+When `subgraphs=true` is not available or causes issues, you can track subagents by:
+1. Detecting `task` tool calls in the message stream
+2. Marking them as "started" when the tool is called
+3. Marking them as "done" when `stream.isLoading` becomes false
+
+```typescript
+// Detect new subagent
+if (toolCall.name === "task") {
+  const name = toolCall.args.subagent_type;
+  setActiveSubagents((prev) => {
+    const next = new Map(prev);
+    next.set(name, {
+      name,
+      status: "working",
+      currentTask: toolCall.args.description,
+      startedAt: new Date(),
+      activityLogs: [`Started: ${name}`],
+    });
+    return next;
+  });
+}
+```
+
+### 11.3 AgentState Type Compatibility
+
+The LangGraph SDK expects states to satisfy `Record<string, unknown>`. Add an index signature:
+
+```typescript
+interface AgentState {
+  messages: Message[];
+  todos?: Todo[];
+  [key: string]: unknown; // Required for SDK compatibility
+}
+```
+
+### 11.4 OpenRouter Model Configuration
+
+For OpenRouter, use `ChatOpenAI` with custom base URL:
+
+```python
+from langchain_openai import ChatOpenAI
+
+model = ChatOpenAI(
+    model="google/gemini-2.0-flash-001",  # Or any OpenRouter model
+    openai_api_base="https://openrouter.ai/api/v1",
+    openai_api_key=os.getenv("OPENROUTER_API_KEY"),
+)
+```
+
+**Important**: Some models on OpenRouter may have different tool-calling capabilities. Test with your chosen model.
+
+### 11.5 FilesystemBackend Path Configuration
+
+When using `FilesystemBackend`, all paths in tools are relative to `root_dir`:
+
+```python
+# In graph.py
+backend = FilesystemBackend(root_dir=str(DATA_DIR))
+
+# Agent sees paths like:
+# - repositories/langchain-ai_deepagents/
+# - tutorials/langchain-ai_deepagents/user/0_overview.md
+```
+
+### 11.6 Custom Tools with Path Helpers
+
+Define helper tools that return full paths for the agent to use:
+
+```python
+@tool
+def get_repo_path(repo_name: str) -> str:
+    """Get the local filesystem path for a cloned repository."""
+    return f"repositories/{repo_name}"
+
+@tool
+def get_tutorial_path(repo_name: str, audience: str = "user") -> str:
+    """Get the path where tutorials should be written."""
+    return f"tutorials/{repo_name}/{audience}"
+```
+
+### 11.7 Prompt Engineering for Subagent Delegation
+
+To ensure the main agent delegates work, be explicit in the system prompt:
+
+```python
+BRAIN_PROMPT = """
+You are the Lead Architect for RepoLearn.
+
+## MANDATORY WORKFLOW:
+1. Clone the repository using git_clone
+2. Create a plan using write_todos
+3. **DELEGATE** analysis to code-analyzer subagent
+4. **DELEGATE** documentation to doc-writer subagent
+5. Review and synthesize final tutorials
+
+## CRITICAL RULES:
+- You MUST use the `task` tool to delegate work
+- You NEVER read source code files directly
+- You only read summaries from subagents
+"""
+```
+
+### 11.8 Error Handling in Frontend
+
+Handle stream errors gracefully:
+
+```typescript
+if (stream.error) {
+  const errorMessage = (stream.error as Error).message || "Unknown error";
+  return <ErrorDisplay message={errorMessage} />;
+}
+```
+
+### 11.9 Thread ID Management
+
+Generate thread IDs on the frontend and pass them to the job page:
+
+```typescript
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const jobId = crypto.randomUUID(); // Thread ID
+  router.push(`/job/${jobId}?url=${encodeURIComponent(url)}`);
+};
+```
+
+This allows reconnection if the user refreshes the page.
+
+---
+
+## 12. Troubleshooting Common Issues
+
+### Issue: Subagents not being spawned
+**Cause**: Main agent reading files directly instead of delegating.
+**Fix**: Strengthen system prompt to MANDATE delegation.
+
+### Issue: Todos not updating in UI
+**Cause**: Not using `stream.values` or wrong stream mode.
+**Fix**: Ensure `streamMode: ["messages", "updates"]` and check `stream.values.todos`.
+
+### Issue: TypeScript errors with AgentState
+**Cause**: State type doesn't satisfy `Record<string, unknown>`.
+**Fix**: Add index signature `[key: string]: unknown` to interface.
+
+### Issue: CORS errors connecting to LangGraph server
+**Cause**: Frontend and backend on different ports.
+**Fix**: LangGraph dev server allows localhost by default. Ensure `NEXT_PUBLIC_LANGGRAPH_URL` is correct.
+
+### Issue: Files not appearing in agent's filesystem
+**Cause**: Path mismatch between backend and agent.
+**Fix**: Use absolute paths or ensure `root_dir` is correctly set in `FilesystemBackend`.
+
