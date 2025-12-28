@@ -1455,7 +1455,7 @@ Shall I create a requirements.txt file pinning the dependencies and a prototype_
 
 ---
 
-Here are some of my notes:
+================ My Notes ================
 
 The Hook: Scientific software suffers from a "Sustainability Crisis." Post-docs write code, leave, and the code dies because it’s undocumented. Researcher is Researcher, not Software Engineer. My paper proposes a solution to enhance reproducibility and software sustainability in science. The Deep Agent is just the method, not the goal. 
 
@@ -1476,3 +1476,20 @@ Mitigation: In your introduction, explicitly cite the "FAIR Principles for Resea
 Risk: Tool track reviewers say "GitHub Copilot already does this."
 Mitigation: Copilot explains snippets. Your tool generates comprehensive, structured guides (tutorials) and allows maintainers to generate the official docs for the whole repo at once. It's a "Repository-level" tool, not a "Completion" tool.
 
+You proposed:
+A/B testing (N=20, user preference)
+LLM-as-Judge (Likert scale)
+My Critique: These are fine but not compelling for e-Science. They care about impact.
+
+The Killer Metric: Time-to-First-Success
+Experiment Design
+Task: "Install this library and run the example in the README"
+Group A: Uses original docs
+Group B: Uses your AI-generated docs
+Measure: Time to complete task + Success rate
+Why this works:
+
+It's concrete (not subjective like "preference")
+It maps to real scientific productivity (faster onboarding = more science done)
+It's easy to explain to e-Science reviewers who are not SE experts
+Sample Size: N=20 is fine. N=10 per group. But you need controlled conditions (same library for everyone, clear success criteria).
