@@ -1,88 +1,154 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import { useAgentStream } from "@/hooks/useAgentStream";
+import { PlannerPanel } from "@/components/PlannerPanel";
+import { BrainPanel } from "@/components/BrainPanel";
+import { GridPanel } from "@/components/GridPanel";
 
-export default function JobPage() {
+function JobPageContent() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const jobId = params.id as string;
 
+    // Get the GitHub URL and audience from query params (set by /new page)
+    const githubUrl = searchParams.get("url");
+    const audience = (searchParams.get("audience") as "user" | "dev") || "dev";
+
+    const [hasStarted, setHasStarted] = useState(false);
+    const [isComplete, setIsComplete] = useState(false);
+
+    const {
+        messages,
+        todos,
+        isLoading,
+        error,
+        threadId,
+        submitAnalysis,
+    } = useAgentStream({
+        // Don't pass initial thread since we create it optimistically
+        onComplete: () => setIsComplete(true),
+    });
+
+    // Auto-start analysis when page loads with a URL
+    useEffect(() => {
+        if (githubUrl && !hasStarted && !isLoading) {
+            setHasStarted(true);
+            submitAnalysis(githubUrl, audience);
+        }
+    }, [githubUrl, hasStarted, isLoading, audience, submitAnalysis]);
+
+    // Calculate status
+    const status = isComplete
+        ? "complete"
+        : isLoading
+            ? "analyzing"
+            : error
+                ? "error"
+                : hasStarted
+                    ? "processing"
+                    : "idle";
+
     return (
-        <main className="min-h-screen flex flex-col">
+        <main className="h-screen flex flex-col">
             {/* Header */}
-            <header className="border-b border-zinc-800 px-6 py-4">
+            <header className="border-b border-zinc-800 px-6 py-4 flex-shrink-0">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <Link href="/" className="text-xl font-semibold tracking-tight">
                         <span className="text-blue-500">Repo</span>Learn
                     </Link>
-                    <div className="flex items-center gap-2 text-sm text-zinc-400">
-                        <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
-                        Analyzing...
+                    <div className="flex items-center gap-4">
+                        {/* Status badge */}
+                        <div className="flex items-center gap-2 text-sm">
+                            {(status === "analyzing" || status === "processing") && (
+                                <>
+                                    <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                                    <span className="text-yellow-400">Analyzing...</span>
+                                </>
+                            )}
+                            {status === "complete" && (
+                                <>
+                                    <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                    <span className="text-emerald-400">Complete</span>
+                                </>
+                            )}
+                            {status === "error" && (
+                                <>
+                                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                                    <span className="text-red-400">Error</span>
+                                </>
+                            )}
+                            {status === "idle" && (
+                                <>
+                                    <span className="w-2 h-2 bg-zinc-500 rounded-full"></span>
+                                    <span className="text-zinc-400">Ready</span>
+                                </>
+                            )}
+                        </div>
+
+                        {/* View Tutorial button (when complete) */}
+                        {isComplete && githubUrl && (
+                            <Link
+                                href={`/tutorial/${encodeURIComponent(githubUrl)}`}
+                                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                                View Tutorial →
+                            </Link>
+                        )}
                     </div>
                 </div>
             </header>
 
+            {/* Error display */}
+            {error && (
+                <div className="bg-red-900/20 border-b border-red-800 px-6 py-3 text-sm text-red-400">
+                    Error: {error.message}
+                </div>
+            )}
+
             {/* 3-Panel Layout */}
-            <div className="flex-1 grid grid-cols-12 gap-0">
-                {/* Left Panel: Planner */}
-                <aside className="col-span-3 border-r border-zinc-800 p-4 overflow-y-auto">
-                    <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">
-                        Planner
-                    </h3>
-                    <div className="space-y-2">
-                        {/* Placeholder TODO items */}
-                        <div className="flex items-center gap-2 p-2 rounded bg-zinc-900 text-sm">
-                            <span className="w-4 h-4 border border-zinc-600 rounded"></span>
-                            <span className="text-zinc-500">Waiting for tasks...</span>
-                        </div>
-                    </div>
-                </aside>
+            <div className="flex-1 grid grid-cols-12 min-h-0">
+                {/* Left Panel: Planner (3 cols) */}
+                <div className="col-span-3 min-h-0">
+                    <PlannerPanel todos={todos} isLoading={isLoading || (hasStarted && messages.length === 0)} />
+                </div>
 
-                {/* Center Panel: The Brain */}
-                <main className="col-span-6 border-r border-zinc-800 flex flex-col">
-                    <div className="p-4 border-b border-zinc-800">
-                        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
-                            The Brain
-                        </h3>
-                    </div>
-                    <div className="flex-1 p-4 font-mono text-sm overflow-y-auto bg-zinc-900/50">
-                        {/* Terminal-like log output */}
-                        <div className="space-y-1 text-zinc-400">
-                            <p>
-                                <span className="text-blue-400">[system]</span> Connected to LangGraph server
-                            </p>
-                            <p>
-                                <span className="text-blue-400">[system]</span> Job ID: {jobId.slice(0, 8)}...
-                            </p>
-                            <p>
-                                <span className="text-yellow-400">[agent]</span> Initializing analysis...
-                            </p>
-                            <p className="animate-pulse">▊</p>
-                        </div>
-                    </div>
-                </main>
+                {/* Center Panel: The Brain (6 cols) */}
+                <div className="col-span-6 min-h-0">
+                    <BrainPanel messages={messages} isLoading={isLoading || (hasStarted && messages.length === 0)} />
+                </div>
 
-                {/* Right Panel: The Grid (Sub-agents) */}
-                <aside className="col-span-3 p-4 overflow-y-auto">
-                    <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">
-                        Sub-agents
-                    </h3>
-                    <div className="grid grid-cols-1 gap-3">
-                        {/* Placeholder - no active sub-agents */}
-                        <div className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/50 text-center">
-                            <p className="text-sm text-zinc-500">No active sub-agents</p>
-                        </div>
-                    </div>
-                </aside>
+                {/* Right Panel: Sub-agents Grid (3 cols) */}
+                <div className="col-span-3 min-h-0">
+                    <GridPanel subagents={[]} isLoading={isLoading || (hasStarted && messages.length === 0)} />
+                </div>
             </div>
 
             {/* Footer / Status bar */}
-            <footer className="border-t border-zinc-800 px-6 py-2 text-xs text-zinc-500">
+            <footer className="border-t border-zinc-800 px-6 py-2 text-xs text-zinc-500 flex-shrink-0">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <span>Thread: {jobId.slice(0, 8)}...</span>
-                    <span>Tokens: 0 | Cost: $0.00</span>
+                    <span>Thread: {(threadId || jobId).slice(0, 8)}...</span>
+                    <span>
+                        {githubUrl && (
+                            <span className="text-zinc-400">{githubUrl}</span>
+                        )}
+                    </span>
                 </div>
             </footer>
         </main>
+    );
+}
+
+export default function JobPage() {
+    return (
+        <Suspense fallback={
+            <div className="h-screen flex items-center justify-center bg-zinc-950 text-zinc-400">
+                Loading...
+            </div>
+        }>
+            <JobPageContent />
+        </Suspense>
     );
 }
