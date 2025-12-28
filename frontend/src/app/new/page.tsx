@@ -32,9 +32,25 @@ export default function NewRepository() {
             {/* Header */}
             <header className="border-b border-zinc-800 px-6 py-4">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <Link href="/" className="text-xl font-semibold tracking-tight">
-                        <span className="text-blue-500">Repo</span>Learn
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        {/* Back button */}
+                        <button
+                            type="button"
+                            onClick={() => router.push("/")}
+                            className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            <span className="text-sm">Back</span>
+                        </button>
+
+                        <div className="h-5 w-px bg-zinc-700" />
+
+                        <Link href="/" className="text-xl font-semibold tracking-tight">
+                            <span className="text-blue-500">Repo</span>Learn
+                        </Link>
+                    </div>
                 </div>
             </header>
 
