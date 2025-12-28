@@ -15,14 +15,16 @@ export default function NewRepository() {
         e.preventDefault();
         setIsLoading(true);
 
-        // TODO: In Phase 4, this will call the LangGraph API to start a run
-        // For now, we generate a mock job ID and redirect
+        // Generate a unique job ID (this will be the LangGraph thread ID)
         const jobId = crypto.randomUUID();
 
-        // Store job config in sessionStorage for now
-        sessionStorage.setItem(`job-${jobId}`, JSON.stringify({ url, audience, depth }));
+        // Redirect to job page with URL and audience as query params
+        const params = new URLSearchParams({
+            url: url,
+            audience: audience,
+        });
 
-        router.push(`/job/${jobId}`);
+        router.push(`/job/${jobId}?${params.toString()}`);
     };
 
     return (
