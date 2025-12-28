@@ -28,6 +28,25 @@ repo-learn/
 *   **The Sidecar (Utility API)**: A `FastAPI` service that handles non-agentic tasks like file system exploration (for the editor), project listing, and saving user edits.
 *   **The Data Layer**: A shared volume (local directory) where the agent writes markdown files and the frontend reads them.
 
+## 2.2 Data Flow & Streaming
+To ensure robust, real-time updates and sub-agent differentiation, we utilize LangGraph's native streaming capabilities:
+*   **Event Routing**: Events are streamed as tuples `(namespace, data)`.
+    *   **Main Agent**: `namespace=()` (empty).
+    *   **Sub-Agent**: `namespace=('task_tool', 'subagent_name')`.
+*   **Persistence**: All agent states are stored in a Postgres/SQLite database managed by LangGraph.
+    *   **Reconnection**: The Frontend URL contains a `thread_id` (e.g., `/job/uuid-123`). On page refresh, the frontend reconnects to this thread and hydrates the state from the DB checkpoint.
+
+## 2.3 Error Handling & Resilience
+*   **Retry Logic**: Critical nodes (e.g., `GitClone`, API calls) must implement `retry_policy` (exponential backoff) to handle transient failures.
+*   **Exception Propagation**: Failures in Sub-agents must be caught by the Main Agent to allow for recovery or task skipping, rather than crashing the entire pipeline.
+*   **Testing**: We will use "In-Memory" mode for unit/integration tests to validate graph logic without heavy docker dependencies.
+
+## 3.4 File Management Strategy
+*   **Decoupled Naming**: The agent does not need to decide the final filename immediately.
+    *   *Draft Phase*: Files are created with temporary IDs or logical names.
+    *   *Synthesis Phase*: The Main Agent renames and organizes files into the final `{order}_{title}.md` structure based on the complete context.
+*   **Storage**: Files are written to the shared `data/` volume, accessible by both the Agent (for writing) and the Sidecar (for reading/serving to UI).
+
 ## 3. Functional Requirements
 
 ### 3.1 User Workflow
