@@ -5,10 +5,10 @@ import type { Message } from "@langchain/langgraph-sdk";
 import { useMemo, useCallback, useState } from "react";
 
 // Types for our agent state
+// DeepAgents TodoListMiddleware uses: { status: "pending" | "in_progress" | "completed", content: string }
 export interface Todo {
-    id: string;
-    task: string;
-    status: "pending" | "in_progress" | "done";
+    status: "pending" | "in_progress" | "completed";
+    content: string;
 }
 
 export interface AgentMessage {
@@ -34,19 +34,43 @@ interface UseAgentStreamOptions {
     onComplete?: () => void;
 }
 
+// The full state type including todos from TodoListMiddleware
+interface AgentState {
+    messages: Message[];
+    todos?: Todo[];
+}
+
 export function useAgentStream(options: UseAgentStreamOptions = {}) {
     const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_URL || "http://localhost:2024";
 
     // Thread management - start with null if no initial thread
     const [threadId, setThreadId] = useState<string | null>(options.initialThreadId ?? null);
 
-    const stream = useStream<{ messages: Message[] }>({
+    // Track todos separately since they come from updates
+    const [todos, setTodos] = useState<Todo[]>([]);
+
+    const stream = useStream<AgentState>({
         apiUrl,
         assistantId: "agent",
         threadId: threadId,
         onThreadId: setThreadId,
         messagesKey: "messages",
-        onFinish: () => {
+        // Capture todos from graph updates
+        onUpdateEvent: (update) => {
+            // Update contains the state values from each node
+            if (update && typeof update === 'object') {
+                const updateObj = update as Record<string, unknown>;
+                // Check if this update contains todos
+                if ('todos' in updateObj && Array.isArray(updateObj.todos)) {
+                    setTodos(updateObj.todos as Todo[]);
+                }
+            }
+        },
+        onFinish: (state) => {
+            // Also extract todos from final state
+            if (state?.todos) {
+                setTodos(state.todos);
+            }
             options.onComplete?.();
         },
     });
@@ -74,11 +98,14 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
         });
     }, [stream.messages]);
 
-    // Extract todos from state updates
-    const todos = useMemo((): Todo[] => {
-        const values = stream.values as { todos?: Todo[] } | undefined;
+    // Also try to get todos from stream.values as fallback
+    const currentTodos = useMemo((): Todo[] => {
+        // First check our state
+        if (todos.length > 0) return todos;
+        // Fallback to values
+        const values = stream.values as AgentState | undefined;
         return values?.todos || [];
-    }, [stream.values]);
+    }, [todos, stream.values]);
 
     // Submit a new analysis request with optimistic thread creation
     const submitAnalysis = useCallback((githubUrl: string, audience: "user" | "dev" = "dev") => {
@@ -102,7 +129,7 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
     return {
         // State
         messages,
-        todos,
+        todos: currentTodos,
         isLoading: stream.isLoading,
         error: stream.error,
         threadId: threadId,

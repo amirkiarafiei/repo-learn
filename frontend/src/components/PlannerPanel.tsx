@@ -12,8 +12,13 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
         <aside className="h-full flex flex-col border-r border-zinc-800">
             <div className="p-4 border-b border-zinc-800">
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
-                    Planner
+                    The Plan (TODOs)
                 </h3>
+                {todos.length > 0 && (
+                    <div className="text-xs text-zinc-500 mt-1">
+                        {todos.filter(t => t.status === "completed").length}/{todos.length} completed
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
@@ -33,19 +38,19 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        {todos.map((todo) => (
+                        {todos.map((todo, index) => (
                             <div
-                                key={todo.id}
-                                className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${todo.status === "done"
-                                        ? "bg-emerald-900/20 border border-emerald-800/50"
-                                        : todo.status === "in_progress"
-                                            ? "bg-yellow-900/20 border border-yellow-800/50"
-                                            : "bg-zinc-900/50 border border-zinc-800"
+                                key={index}
+                                className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${todo.status === "completed"
+                                    ? "bg-emerald-900/20 border border-emerald-800/50"
+                                    : todo.status === "in_progress"
+                                        ? "bg-yellow-900/20 border border-yellow-800/50"
+                                        : "bg-zinc-900/50 border border-zinc-800"
                                     }`}
                             >
                                 {/* Status icon */}
-                                <div className="mt-0.5">
-                                    {todo.status === "done" ? (
+                                <div className="mt-0.5 flex-shrink-0">
+                                    {todo.status === "completed" ? (
                                         <div className="w-4 h-4 bg-emerald-500 rounded flex items-center justify-center">
                                             <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -58,16 +63,16 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
                                     )}
                                 </div>
 
-                                {/* Task text */}
+                                {/* Task content */}
                                 <span
-                                    className={`text-sm flex-1 ${todo.status === "done"
-                                            ? "text-zinc-400 line-through"
-                                            : todo.status === "in_progress"
-                                                ? "text-yellow-200"
-                                                : "text-zinc-300"
+                                    className={`text-sm flex-1 ${todo.status === "completed"
+                                        ? "text-zinc-400 line-through"
+                                        : todo.status === "in_progress"
+                                            ? "text-yellow-200"
+                                            : "text-zinc-300"
                                         }`}
                                 >
-                                    {todo.task}
+                                    {todo.content}
                                 </span>
                             </div>
                         ))}
