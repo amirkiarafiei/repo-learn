@@ -12,7 +12,7 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
         <aside className="h-full flex flex-col">
             <div className="p-4 border-b border-zinc-800">
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
-                    Sub-agents
+                    The Workers (Sub-agents)
                 </h3>
             </div>
 
@@ -39,20 +39,20 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
                             <div
                                 key={agent.name}
                                 className={`p-4 rounded-lg border transition-all ${agent.status === "running"
-                                        ? "border-blue-500/50 bg-blue-900/20"
-                                        : agent.status === "done"
-                                            ? "border-emerald-500/50 bg-emerald-900/20"
-                                            : "border-red-500/50 bg-red-900/20"
+                                    ? "border-blue-500/50 bg-blue-900/20"
+                                    : agent.status === "done"
+                                        ? "border-emerald-500/50 bg-emerald-900/20"
+                                        : "border-red-500/50 bg-red-900/20"
                                     }`}
                             >
                                 <div className="flex items-center gap-2 mb-2">
                                     {/* Status indicator */}
                                     <span
                                         className={`w-2 h-2 rounded-full ${agent.status === "running"
-                                                ? "bg-blue-500 animate-pulse"
-                                                : agent.status === "done"
-                                                    ? "bg-emerald-500"
-                                                    : "bg-red-500"
+                                            ? "bg-blue-500 animate-pulse"
+                                            : agent.status === "done"
+                                                ? "bg-emerald-500"
+                                                : "bg-red-500"
                                             }`}
                                     ></span>
 

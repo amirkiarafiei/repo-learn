@@ -20,7 +20,7 @@ export function BrainPanel({ messages, isLoading }: BrainPanelProps) {
         <main className="h-full flex flex-col border-r border-zinc-800">
             <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
-                    The Brain
+                    The Brain (Deep Agent)
                 </h3>
                 {isLoading && (
                     <span className="flex items-center gap-2 text-xs text-yellow-400">
