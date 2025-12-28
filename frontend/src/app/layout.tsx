@@ -26,15 +26,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} font-sans antialiased bg-zinc-950 text-zinc-100 min-h-screen relative`}
+        className={`${inter.variable} font-sans antialiased bg-black text-zinc-100 min-h-screen`}
       >
-        {/* Subtle gradient background */}
-        <div className="fixed inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 pointer-events-none" />
-        <div className="fixed inset-0 noise-overlay pointer-events-none" />
-
-        <div className="relative z-10">
-          <ToastProvider>{children}</ToastProvider>
-        </div>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
