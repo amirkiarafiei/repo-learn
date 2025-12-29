@@ -4,8 +4,16 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useToast } from "@/components/Toast";
 
+interface TutorialEntry {
+  id: string;
+  audience: "user" | "dev";
+  fullId: string;
+  stars: number | null;
+  starsFormatted: string | null;
+}
+
 interface StorageData {
-  tutorials: string[];
+  tutorials: TutorialEntry[];
   repos: string[];
   stats: {
     tutorialsCount: number;
@@ -50,20 +58,23 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleDelete = async (id: string, deleteType: "all" | "cache") => {
-    setDeleting(id);
+  const handleDelete = async (id: string, audience: "user" | "dev", deleteType: "all" | "cache" | "audience") => {
+    const fullId = `${id}:${audience}`;
+    setDeleting(fullId);
     setOpenMenu(null);
     try {
       await fetch("/api/storage", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, deleteType }),
+        body: JSON.stringify({ id, audience, deleteType }),
       });
       await fetchStorage();
       addToast(
         deleteType === "all"
           ? `Deleted ${id.replace(/_/g, "/")}`
-          : `Cleared cache for ${id.replace(/_/g, "/")}`,
+          : deleteType === "audience"
+            ? `Deleted ${audience} version of ${id.replace(/_/g, "/")}`
+            : `Cleared cache for ${id.replace(/_/g, "/")}`,
         "success"
       );
     } catch {
@@ -73,7 +84,7 @@ export default function Home() {
     }
   };
 
-  const formatName = (id: string) => id.replace(/_/g, "/");
+  const formatName = (id: string) => id.replace(/_/g, " / ");
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -112,7 +123,7 @@ export default function Home() {
         <div className="max-w-3xl text-center space-y-6 animate-fade-in">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight">
             AI-powered tutorials from{" "}
-            <span className="gradient-text">any codebase</span>
+            <span className="text-blue-600">any codebase</span>
           </h2>
 
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
@@ -188,26 +199,37 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-              {storage.tutorials.map((id) => (
+              {/* Add Repository Card - First position */}
+              <Link
+                href="/new"
+                className="group rounded-xl border-2 border-dashed border-zinc-700 bg-zinc-900/50 p-5 transition-all hover:border-blue-500/50 hover:bg-zinc-800/50 flex flex-col items-center justify-center"
+              >
+                <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-600 flex items-center justify-center mb-2 group-hover:bg-blue-900/30 group-hover:border-blue-500/50 transition-all">
+                  <span className="text-xl text-zinc-400 group-hover:text-blue-400">+</span>
+                </div>
+                <span className="text-sm font-medium text-zinc-400 group-hover:text-blue-300 transition-colors">Add Repository</span>
+              </Link>
+
+              {storage.tutorials.map((tutorial) => (
                 <div
-                  key={id}
-                  className={`relative group rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 transition-all hover:border-zinc-700 hover-lift ${deleting === id ? "opacity-50 scale-95" : ""
+                  key={tutorial.fullId}
+                  className={`relative group rounded-xl border border-zinc-700/80 bg-zinc-900 p-5 transition-all hover:border-zinc-500 hover:bg-zinc-800/80 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 cursor-pointer ${deleting === tutorial.fullId ? "opacity-50 scale-95" : ""
                     }`}
                 >
-                  <Link href={`/tutorial/${id}`} className="block">
+                  <Link href={`/tutorial/${tutorial.id}?audience=${tutorial.audience}`} className="block">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-zinc-100 truncate group-hover:text-blue-400 transition-colors">
-                          {formatName(id)}
+                          {formatName(tutorial.id)}
                         </h4>
-                        <div className="flex items-center gap-2 mt-2">
-                          {/* Docs badge - always present if tutorial exists */}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          {/* Docs badge - always present */}
                           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                             Docs
                           </span>
                           {/* Code badge - only if repo is cached */}
-                          {storage.repos.includes(id) ? (
+                          {storage.repos.includes(tutorial.id) ? (
                             <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                               Code
@@ -221,6 +243,21 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
+                    {/* Bottom row: Stars and Audience info */}
+                    <div className="flex items-center justify-between mt-3">
+                      {tutorial.starsFormatted ? (
+                        <div className="flex items-center gap-1.5">
+                          <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          <span className="text-sm text-zinc-400">{tutorial.starsFormatted}</span>
+                        </div>
+                      ) : <div />}
+
+                      <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                        {tutorial.audience === "user" ? "User-friendly" : "Developer-friendly"}
+                      </span>
+                    </div>
                   </Link>
 
                   {/* 3-dot menu button */}
@@ -229,7 +266,7 @@ export default function Home() {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setOpenMenu(openMenu === id ? null : id);
+                      setOpenMenu(openMenu === tutorial.fullId ? null : tutorial.fullId);
                     }}
                     className="absolute top-4 right-4 p-2 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-all opacity-0 group-hover:opacity-100"
                   >
@@ -239,15 +276,15 @@ export default function Home() {
                   </button>
 
                   {/* Dropdown menu */}
-                  {openMenu === id && (
+                  {openMenu === tutorial.fullId && (
                     <div
                       ref={menuRef}
                       className="absolute top-12 right-4 z-50 w-44 rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl py-1 animate-fade-in"
                     >
-                      {storage.repos.includes(id) && (
+                      {storage.repos.includes(tutorial.id) && (
                         <button
                           type="button"
-                          onClick={() => handleDelete(id, "cache")}
+                          onClick={() => handleDelete(tutorial.id, tutorial.audience, "cache")}
                           className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                         >
                           <span className="text-amber-400">🗑</span>
@@ -256,23 +293,24 @@ export default function Home() {
                       )}
                       <button
                         type="button"
-                        onClick={() => handleDelete(id, "all")}
+                        onClick={() => handleDelete(tutorial.id, tutorial.audience, "audience")}
                         className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                       >
                         <span>✕</span>
-                        Delete All
+                        Delete {tutorial.audience === "user" ? "User" : "Dev"} Version
                       </button>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </section>
+          )
+          }
+        </div >
+      </section >
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800/50 px-6 py-6">
+      < footer className="border-t border-zinc-800/50 px-6 py-6" >
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-zinc-500">
             RepoLearn — Deep Agents for Codebase Understanding
@@ -297,7 +335,7 @@ export default function Home() {
             </a>
           </div>
         </div>
-      </footer>
-    </main>
+      </footer >
+    </main >
   );
 }

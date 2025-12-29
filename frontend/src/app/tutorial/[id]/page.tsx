@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,6 +9,7 @@ import remarkGfm from "remark-gfm";
 interface TutorialData {
     id: string;
     name: string;
+    audience: "user" | "dev";
     files: string[];
     contents: Record<string, string>;
 }
@@ -17,10 +18,12 @@ interface TutorialMetadata {
     threadId?: string;
 }
 
-export default function TutorialPage() {
+function TutorialPageContent() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const id = params.id as string;
+    const audience = (searchParams.get("audience") as "user" | "dev") || "user";
 
     const [tutorial, setTutorial] = useState<TutorialData | null>(null);
     const [metadata, setMetadata] = useState<TutorialMetadata | null>(null);
@@ -32,7 +35,7 @@ export default function TutorialPage() {
     useEffect(() => {
         async function fetchTutorial() {
             try {
-                const res = await fetch(`/api/tutorials/${encodeURIComponent(id)}`);
+                const res = await fetch(`/api/tutorials/${encodeURIComponent(id)}?audience=${audience}`);
                 if (!res.ok) throw new Error("Tutorial not found");
                 const data = await res.json();
                 setTutorial(data);
@@ -48,7 +51,7 @@ export default function TutorialPage() {
 
         async function fetchMetadata() {
             try {
-                const res = await fetch(`/api/tutorials/${encodeURIComponent(id)}/metadata`);
+                const res = await fetch(`/api/tutorials/${encodeURIComponent(id)}/metadata?audience=${audience}`);
                 if (res.ok) {
                     const data = await res.json();
                     setMetadata(data);
@@ -60,7 +63,7 @@ export default function TutorialPage() {
 
         fetchTutorial();
         fetchMetadata();
-    }, [id]);
+    }, [id, audience]);
 
     if (loading) {
         return (
@@ -99,7 +102,7 @@ export default function TutorialPage() {
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                            <span className="text-sm">Back</span>
+                            <span className="text-sm">Home</span>
                         </button>
 
                         <div className="h-5 w-px bg-zinc-700" />
@@ -109,20 +112,23 @@ export default function TutorialPage() {
                         </Link>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        {/* View Dashboard button (only if threadId exists) */}
+                    {/* Centered Visualization Panel button */}
+                    <div className="flex-1 flex justify-center">
                         {metadata?.threadId && (
                             <Link
                                 href={`/job/${metadata.threadId}?readonly=true&tutorial=${encodeURIComponent(id)}`}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-purple-700/50 bg-purple-900/20 text-purple-300 hover:bg-purple-900/40 text-sm transition-colors"
+                                className="flex items-center gap-2 px-4 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 text-sm transition-colors"
                             >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
-                                Deep Agent Panel
+                                Visualization Panel
                             </Link>
                         )}
+                    </div>
 
+                    <div className="flex items-center gap-2">
                         <span className="text-zinc-400 text-sm">Repository:</span>
                         <span className="text-zinc-200 font-mono text-sm bg-zinc-800 px-2 py-1 rounded">
                             {tutorial.name}
@@ -189,5 +195,17 @@ export default function TutorialPage() {
                 </article>
             </div>
         </main>
+    );
+}
+
+export default function TutorialPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-black text-zinc-400">
+                Loading tutorial...
+            </div>
+        }>
+            <TutorialPageContent />
+        </Suspense>
     );
 }

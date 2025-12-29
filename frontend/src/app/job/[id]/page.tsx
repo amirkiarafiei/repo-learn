@@ -40,13 +40,13 @@ function JobPageContent() {
         : (liveStream.error instanceof Error ? liveStream.error : liveStream.error ? new Error(String(liveStream.error)) : null);
     const threadId = isReadonly ? jobId : liveStream.threadId;
 
-    // Save thread ID when job completes (for future dashboard access)
-    const saveThreadMetadata = useCallback(async (repoId: string, tid: string) => {
+    // Save thread ID and audience when job completes (for future dashboard access)
+    const saveThreadMetadata = useCallback(async (repoId: string, tid: string, aud: "user" | "dev") => {
         try {
             await fetch(`/api/tutorials/${encodeURIComponent(repoId)}/metadata`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ threadId: tid }),
+                body: JSON.stringify({ threadId: tid, audience: aud }),
             });
         } catch (err) {
             console.error("Failed to save thread metadata:", err);
@@ -68,10 +68,10 @@ function JobPageContent() {
             const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
             if (match) {
                 const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "");
-                saveThreadMetadata(repoId, liveStream.threadId);
+                saveThreadMetadata(repoId, liveStream.threadId, audience);
             }
         }
-    }, [isComplete, githubUrl, liveStream.threadId, saveThreadMetadata]);
+    }, [isComplete, githubUrl, liveStream.threadId, audience, saveThreadMetadata]);
 
     // Calculate status
     const status = isReadonly
@@ -90,7 +90,7 @@ function JobPageContent() {
         <main className="h-screen flex flex-col">
             {/* Header */}
             <header className="border-b border-zinc-800 px-6 py-4 flex-shrink-0">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
+                <div className="flex items-center gap-6">
                     <div className="flex items-center gap-4">
                         {/* Back button for readonly mode */}
                         {isReadonly && tutorialId && (
@@ -98,7 +98,7 @@ function JobPageContent() {
                                 href={`/tutorial/${encodeURIComponent(tutorialId)}`}
                                 className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors"
                             >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                 </svg>
                                 <span className="text-sm">Back to Tutorial</span>
@@ -111,38 +111,40 @@ function JobPageContent() {
                         </Link>
                     </div>
 
+                    <div className="h-5 w-px bg-zinc-800" />
+
                     <div className="flex items-center gap-4">
                         {/* Status badge */}
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-sm text-zinc-400 font-medium">
                             {status === "history" && (
-                                <>
-                                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
                                     <span className="text-purple-400">History View</span>
-                                </>
+                                </div>
                             )}
                             {(status === "analyzing" || status === "processing") && (
-                                <>
-                                    <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
-                                    <span className="text-yellow-400">Analyzing...</span>
-                                </>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></span>
+                                    <span className="text-yellow-400 font-mono">Analyzing...</span>
+                                </div>
                             )}
                             {status === "complete" && (
-                                <>
-                                    <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                                     <span className="text-emerald-400">Complete</span>
-                                </>
+                                </div>
                             )}
                             {status === "error" && (
-                                <>
-                                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
                                     <span className="text-red-400">Error</span>
-                                </>
+                                </div>
                             )}
                             {status === "idle" && (
-                                <>
-                                    <span className="w-2 h-2 bg-zinc-500 rounded-full"></span>
-                                    <span className="text-zinc-400">Ready</span>
-                                </>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full"></span>
+                                    <span>Ready</span>
+                                </div>
                             )}
                         </div>
 
@@ -150,7 +152,7 @@ function JobPageContent() {
                         {!isReadonly && isComplete && githubUrl && (
                             <Link
                                 href={`/tutorial/${encodeURIComponent(githubUrl)}`}
-                                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors"
                             >
                                 View Tutorial →
                             </Link>
@@ -166,15 +168,7 @@ function JobPageContent() {
                 </div>
             )}
 
-            {/* Readonly info banner */}
-            {isReadonly && (
-                <div className="bg-purple-900/20 border-b border-purple-800/50 px-6 py-2 text-sm text-purple-300 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    You are viewing a historical snapshot of the agent's work.
-                </div>
-            )}
+
 
             {/* 3-Panel Layout */}
             <div className="flex-1 grid grid-cols-12 min-h-0">
