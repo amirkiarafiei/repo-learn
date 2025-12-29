@@ -126,7 +126,17 @@ function TutorialPageContent() {
     }, [id, audience, tabs.length]);
 
     if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-2" />Loading...</div>;
-    if (error || !tutorial) return <div className="min-h-screen flex flex-col items-center justify-center text-red-400">Tutorial not found <Link href="/" className="text-blue-400 hover:underline mt-2">← Home</Link></div>;
+    if (error || !tutorial) return (
+        <div className="min-h-screen flex flex-col items-center justify-center text-red-400 gap-4">
+            <div className="text-xl">Tutorial not found</div>
+            <div className="text-sm text-zinc-500 font-mono">
+                ID: {id}<br />
+                Audience: {audience}<br />
+                Error: {error || "No data"}
+            </div>
+            <Link href="/" className="text-blue-400 hover:underline">← Home</Link>
+        </div>
+    );
 
     const isCode = !activeTab.endsWith(".md");
 
@@ -146,7 +156,7 @@ function TutorialPageContent() {
 
                     <div className="flex-1 flex justify-center items-center gap-3">
                         {metadata?.threadId && (
-                            <Link href={`/job/${metadata.threadId}?readonly=true&tutorial=${encodeURIComponent(id)}`} className="flex items-center gap-2 px-3 py-1 rounded-lg border border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 text-xs transition-colors">
+                            <Link href={`/job/${metadata.threadId}?readonly=true&tutorial=${encodeURIComponent(id)}&audience=${audience}`} className="flex items-center gap-2 px-3 py-1 rounded-lg border border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 text-xs transition-colors">
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                 Visualization Panel
                             </Link>

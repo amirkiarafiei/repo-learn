@@ -21,9 +21,9 @@ def _sanitize_repo_name(url: str) -> str:
     match = re.search(r"github\.com[/:]([^/]+)/([^/]+?)(?:\.git)?$", url)
     if match:
         owner, repo = match.groups()
-        return f"{owner}_{repo}"
+        return f"{owner}_{repo}".lower()
     # Fallback: use the last part of the URL
-    return url.rstrip("/").split("/")[-1].replace(".git", "")
+    return url.rstrip("/").split("/")[-1].replace(".git", "").lower()
 
 
 @tool
