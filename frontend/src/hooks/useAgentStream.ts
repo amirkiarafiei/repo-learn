@@ -72,6 +72,14 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
             }
         },
         onFinish: (state) => {
+            // If there's an error in the stream, DO NOT mark as complete
+            // This prevents redirecting to a broken tutorial page
+            // The 'stream' object from useStream isn't available here due to closure, 
+            // but we can trust the 'error' state will be propagated.
+            // However, onFinish is often called *before* error is set in React state.
+            // We'll rely on the parent component to ignore onComplete if error exists,
+            // or better: let's not call onComplete if the final state looks sparse/failed.
+
             // Extract todos from final state
             const stateObj = state as unknown as AgentState | undefined;
             if (stateObj?.todos) {

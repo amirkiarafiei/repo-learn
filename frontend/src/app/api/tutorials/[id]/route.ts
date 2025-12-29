@@ -16,9 +16,22 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const audience = searchParams.get("audience") || "user";
 
-    const tutorialDir = path.join(TUTORIALS_DIR, id);
-
     try {
+        // Find the actual directory case-insensitively
+        const allEntries = await readdir(TUTORIALS_DIR);
+        const matchedDirName = allEntries.find(
+            (entry) => entry.toLowerCase() === id.toLowerCase()
+        );
+
+        if (!matchedDirName) {
+            return NextResponse.json(
+                { error: "Tutorial directory not found" },
+                { status: 404 }
+            );
+        }
+
+        const tutorialDir = path.join(TUTORIALS_DIR, matchedDirName);
+
         // Check for audience subdirectory first (user/ or dev/)
         const audienceDir = path.join(tutorialDir, audience);
         let targetDir = tutorialDir;

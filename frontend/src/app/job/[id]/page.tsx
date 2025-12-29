@@ -19,7 +19,15 @@ function JobPageContent() {
     const githubUrl = searchParams.get("url");
     const audience = (searchParams.get("audience") as "user" | "dev") || "dev";
     const isReadonly = searchParams.get("readonly") === "true";
-    const tutorialId = searchParams.get("tutorial"); // For linking back to tutorial
+    let tutorialId = searchParams.get("tutorial"); // For linking back to tutorial
+
+    // Defensive: If tutorialId looks like a URL, convert it to repoId format
+    if (tutorialId && tutorialId.includes("github.com")) {
+        const match = tutorialId.match(/github\.com\/([^/]+)\/([^/]+)/);
+        if (match) {
+            tutorialId = `${match[1]}_${match[2]}`.replace(/\.git$/, "");
+        }
+    }
 
     const [hasStarted, setHasStarted] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
@@ -74,17 +82,28 @@ function JobPageContent() {
         if (error) return;
 
         if (isComplete && githubUrl && liveStream.threadId) {
-            // Convert github URL to repo ID format
-            const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
-            if (match) {
-                const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "");
-                saveThreadMetadata(repoId, liveStream.threadId, audience);
+            const checkAndRedirect = async () => {
+                // Convert github URL to repo ID format
+                const url = githubUrl as string;
+                const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
+                if (match) {
+                    const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "");
+                    saveThreadMetadata(repoId, liveStream.threadId, audience);
 
-                // Redirect to tutorial page using repoId
-                if (!isReadonly) {
-                    router.push(`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`);
+                    // Check if tutorial actually exists before redirecting
+                    try {
+                        const res = await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`);
+                        if (res.ok && !isReadonly) {
+                            router.push(`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`);
+                        } else {
+                            console.error("Tutorial generation failed or file not found.");
+                        }
+                    } catch (e) {
+                        console.error("Error checking tutorial existence:", e);
+                    }
                 }
-            }
+            };
+            checkAndRedirect();
         }
     }, [isComplete, githubUrl, liveStream.threadId, audience, saveThreadMetadata, isReadonly, router, error]);
 
@@ -110,7 +129,7 @@ function JobPageContent() {
                         {/* Back button for readonly mode */}
                         {isReadonly && tutorialId && (
                             <Link
-                                href={`/tutorial/${encodeURIComponent(tutorialId)}`}
+                                href={`/tutorial/${encodeURIComponent(tutorialId || "")}?audience=${audience}`}
                                 className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors"
                             >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
