@@ -1,9 +1,10 @@
 "use client";
 
 import { useParams, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import Link from "next/link";
 import { useAgentStream } from "@/hooks/useAgentStream";
+import { useThreadHistory } from "@/hooks/useThreadHistory";
 import { PlannerPanel } from "@/components/PlannerPanel";
 import { BrainPanel } from "@/components/BrainPanel";
 import { GridPanel } from "@/components/GridPanel";
@@ -13,56 +14,112 @@ function JobPageContent() {
     const searchParams = useSearchParams();
     const jobId = params.id as string;
 
-    // Get the GitHub URL and audience from query params (set by /new page)
+    // Get mode and params from query
     const githubUrl = searchParams.get("url");
     const audience = (searchParams.get("audience") as "user" | "dev") || "dev";
+    const isReadonly = searchParams.get("readonly") === "true";
+    const tutorialId = searchParams.get("tutorial"); // For linking back to tutorial
 
     const [hasStarted, setHasStarted] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
 
-    const {
-        messages,
-        todos,
-        subagents,
-        isLoading,
-        error,
-        threadId,
-        submitAnalysis,
-    } = useAgentStream({
-        // Don't pass initial thread since we create it optimistically
+    // Use different hooks based on mode
+    const liveStream = useAgentStream({
         onComplete: () => setIsComplete(true),
     });
 
-    // Auto-start analysis when page loads with a URL
-    useEffect(() => {
-        if (githubUrl && !hasStarted && !isLoading) {
-            setHasStarted(true);
-            submitAnalysis(githubUrl, audience);
+    const historyStream = useThreadHistory(isReadonly ? jobId : null);
+
+    // Pick the right data source
+    const messages = isReadonly ? historyStream.messages : liveStream.messages;
+    const todos = isReadonly ? historyStream.todos : liveStream.todos;
+    const subagents = isReadonly ? historyStream.subagents : liveStream.subagents;
+    const isLoading = isReadonly ? historyStream.isLoading : liveStream.isLoading;
+    const error: Error | null = isReadonly
+        ? historyStream.error
+        : (liveStream.error instanceof Error ? liveStream.error : liveStream.error ? new Error(String(liveStream.error)) : null);
+    const threadId = isReadonly ? jobId : liveStream.threadId;
+
+    // Save thread ID when job completes (for future dashboard access)
+    const saveThreadMetadata = useCallback(async (repoId: string, tid: string) => {
+        try {
+            await fetch(`/api/tutorials/${encodeURIComponent(repoId)}/metadata`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ threadId: tid }),
+            });
+        } catch (err) {
+            console.error("Failed to save thread metadata:", err);
         }
-    }, [githubUrl, hasStarted, isLoading, audience, submitAnalysis]);
+    }, []);
+
+    // Auto-start analysis when page loads with a URL (live mode only)
+    useEffect(() => {
+        if (!isReadonly && githubUrl && !hasStarted && !liveStream.isLoading) {
+            setHasStarted(true);
+            liveStream.submitAnalysis(githubUrl, audience);
+        }
+    }, [isReadonly, githubUrl, hasStarted, liveStream, audience]);
+
+    // Save thread ID when complete
+    useEffect(() => {
+        if (isComplete && githubUrl && liveStream.threadId) {
+            // Convert github URL to repo ID format (e.g., "unjs_destr")
+            const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+            if (match) {
+                const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "");
+                saveThreadMetadata(repoId, liveStream.threadId);
+            }
+        }
+    }, [isComplete, githubUrl, liveStream.threadId, saveThreadMetadata]);
 
     // Calculate status
-    const status = isComplete
-        ? "complete"
-        : isLoading
-            ? "analyzing"
-            : error
-                ? "error"
-                : hasStarted
-                    ? "processing"
-                    : "idle";
+    const status = isReadonly
+        ? "history"
+        : isComplete
+            ? "complete"
+            : isLoading
+                ? "analyzing"
+                : error
+                    ? "error"
+                    : hasStarted
+                        ? "processing"
+                        : "idle";
 
     return (
         <main className="h-screen flex flex-col">
             {/* Header */}
             <header className="border-b border-zinc-800 px-6 py-4 flex-shrink-0">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <Link href="/" className="text-xl font-semibold tracking-tight">
-                        <span className="text-blue-500">Repo</span>Learn
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        {/* Back button for readonly mode */}
+                        {isReadonly && tutorialId && (
+                            <Link
+                                href={`/tutorial/${encodeURIComponent(tutorialId)}`}
+                                className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                <span className="text-sm">Back to Tutorial</span>
+                            </Link>
+                        )}
+                        {isReadonly && tutorialId && <div className="h-5 w-px bg-zinc-700" />}
+
+                        <Link href="/" className="text-xl font-semibold tracking-tight">
+                            <span className="text-blue-600">Repo</span>Learn
+                        </Link>
+                    </div>
+
                     <div className="flex items-center gap-4">
                         {/* Status badge */}
                         <div className="flex items-center gap-2 text-sm">
+                            {status === "history" && (
+                                <>
+                                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                                    <span className="text-purple-400">History View</span>
+                                </>
+                            )}
                             {(status === "analyzing" || status === "processing") && (
                                 <>
                                     <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
@@ -89,8 +146,8 @@ function JobPageContent() {
                             )}
                         </div>
 
-                        {/* View Tutorial button (when complete) */}
-                        {isComplete && githubUrl && (
+                        {/* View Tutorial button (when complete, live mode only) */}
+                        {!isReadonly && isComplete && githubUrl && (
                             <Link
                                 href={`/tutorial/${encodeURIComponent(githubUrl)}`}
                                 className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -109,21 +166,31 @@ function JobPageContent() {
                 </div>
             )}
 
+            {/* Readonly info banner */}
+            {isReadonly && (
+                <div className="bg-purple-900/20 border-b border-purple-800/50 px-6 py-2 text-sm text-purple-300 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    You are viewing a historical snapshot of the agent's work.
+                </div>
+            )}
+
             {/* 3-Panel Layout */}
             <div className="flex-1 grid grid-cols-12 min-h-0">
                 {/* Left Panel: Planner (3 cols) */}
                 <div className="col-span-3 min-h-0">
-                    <PlannerPanel todos={todos} isLoading={isLoading || (hasStarted && messages.length === 0)} />
+                    <PlannerPanel todos={todos} isLoading={isLoading && !isReadonly} />
                 </div>
 
                 {/* Center Panel: The Brain (6 cols) */}
                 <div className="col-span-6 min-h-0">
-                    <BrainPanel messages={messages} isLoading={isLoading || (hasStarted && messages.length === 0)} />
+                    <BrainPanel messages={messages} isLoading={isLoading && !isReadonly} />
                 </div>
 
                 {/* Right Panel: Sub-agents Grid (3 cols) */}
                 <div className="col-span-3 min-h-0">
-                    <GridPanel subagents={subagents} isLoading={isLoading || (hasStarted && messages.length === 0)} />
+                    <GridPanel subagents={subagents} isLoading={isLoading && !isReadonly} />
                 </div>
             </div>
 
@@ -132,8 +199,9 @@ function JobPageContent() {
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <span>Thread: {(threadId || jobId).slice(0, 8)}...</span>
                     <span>
-                        {githubUrl && (
-                            <span className="text-zinc-400">{githubUrl}</span>
+                        {isReadonly && <span className="text-purple-400 mr-2">[Read-Only]</span>}
+                        {(githubUrl || tutorialId) && (
+                            <span className="text-zinc-400">{githubUrl || tutorialId}</span>
                         )}
                     </span>
                 </div>
@@ -145,7 +213,7 @@ function JobPageContent() {
 export default function JobPage() {
     return (
         <Suspense fallback={
-            <div className="h-screen flex items-center justify-center bg-zinc-950 text-zinc-400">
+            <div className="h-screen flex items-center justify-center bg-black text-zinc-400">
                 Loading...
             </div>
         }>
