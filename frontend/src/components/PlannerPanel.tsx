@@ -12,15 +12,14 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
     const progress = todos.length > 0 ? (completed / todos.length) * 100 : 0;
 
     return (
-        <aside className="h-full flex flex-col border-r border-zinc-800/50 glass">
-            <div className="p-4 border-b border-zinc-800/50">
+        <aside className="h-full flex flex-col border-r border-zinc-900 bg-black">
+            <div className="p-4 border-b border-zinc-900">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
-                        <span className="text-lg">📋</span>
-                        The Plan
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                        The Plan (TODOs)
                     </h3>
                     {todos.length > 0 && (
-                        <span className="text-xs font-mono text-zinc-500">
+                        <span className="text-zinc-500 text-xs font-mono">
                             {completed}/{todos.length}
                         </span>
                     )}
@@ -36,7 +35,7 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-hide bg-black">
                 {todos.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-4">
                         {isLoading ? (
@@ -48,21 +47,20 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
                             </div>
                         ) : (
                             <>
-                                <div className="text-4xl mb-3">📝</div>
                                 <div className="text-sm text-zinc-500">No tasks yet</div>
                             </>
                         )}
                     </div>
                 ) : (
-                    <div className="space-y-2 stagger-children">
+                    <div className="space-y-2 stagger-children flex flex-col justify-start h-full">
                         {todos.map((todo, index) => (
                             <div
                                 key={index}
-                                className={`flex items-start gap-3 p-3 rounded-xl transition-all ${todo.status === "completed"
-                                        ? "bg-emerald-500/10 border border-emerald-500/20"
-                                        : todo.status === "in_progress"
-                                            ? "bg-amber-500/10 border border-amber-500/30 animate-border-glow"
-                                            : "bg-zinc-900/50 border border-zinc-800"
+                                className={`flex items-start gap-3 p-3 rounded-lg transition-all border ${todo.status === "completed"
+                                    ? "bg-[#0A0A0A] border-zinc-900"
+                                    : todo.status === "in_progress"
+                                        ? "bg-[#0A0A0A] border-amber-900/50 animate-border-glow"
+                                        : "bg-[#0A0A0A] border-zinc-900"
                                     }`}
                             >
                                 {/* Status icon */}
@@ -83,10 +81,10 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
                                 {/* Task content */}
                                 <span
                                     className={`text-sm flex-1 leading-relaxed ${todo.status === "completed"
-                                            ? "text-zinc-500 line-through"
-                                            : todo.status === "in_progress"
-                                                ? "text-amber-200 font-medium"
-                                                : "text-zinc-300"
+                                        ? "text-zinc-500 line-through"
+                                        : todo.status === "in_progress"
+                                            ? "text-amber-200 font-medium"
+                                            : "text-zinc-300"
                                         }`}
                                 >
                                     {todo.content}

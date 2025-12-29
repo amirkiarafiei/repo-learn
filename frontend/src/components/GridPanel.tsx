@@ -31,30 +31,28 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
     };
 
     const getAgentIcon = (name: string) => {
-        if (name.includes("code") || name.includes("analyzer")) return "🔍";
-        if (name.includes("doc") || name.includes("writer")) return "✍️";
-        return "🤖";
+        // Returned empty string to remove emojis, can be replaced with SVGs if needed later
+        return "";
     };
 
     const completed = subagents.filter((a) => a.status === "done").length;
 
     return (
-        <aside className="h-full flex flex-col glass">
-            <div className="p-4 border-b border-zinc-800/50">
+        <aside className="h-full flex flex-col bg-black">
+            <div className="p-4 border-b border-zinc-900">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
-                        <span className="text-lg">👥</span>
-                        Workers
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                        The Workers (Sub-agents)
                     </h3>
                     {subagents.length > 0 && (
-                        <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-xs font-mono text-zinc-400">
+                        <span className="text-zinc-500 text-xs font-mono">
                             {completed}/{subagents.length}
                         </span>
                     )}
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-hide bg-black">
                 {subagents.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-4">
                         {isLoading ? (
@@ -70,7 +68,6 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
                             </div>
                         ) : (
                             <>
-                                <div className="text-4xl mb-3">🛋️</div>
                                 <div className="text-sm text-zinc-500">No workers active</div>
                             </>
                         )}
@@ -85,11 +82,11 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
                             return (
                                 <div
                                     key={agent.name}
-                                    className={`rounded-xl overflow-hidden transition-all animate-fade-in ${isDone
-                                            ? "bg-zinc-900/50 border border-zinc-800"
-                                            : isError
-                                                ? "bg-red-500/10 border border-red-500/30"
-                                                : "bg-blue-500/10 border border-blue-500/30 shadow-lg shadow-blue-500/10"
+                                    className={`rounded-lg overflow-hidden transition-all animate-fade-in ${isDone
+                                        ? "bg-[#050505] border border-zinc-900 opacity-50"
+                                        : isError
+                                            ? "bg-[#0A0000] border border-red-900/30"
+                                            : "bg-[#00050A] border border-blue-900/30"
                                         }`}
                                 >
                                     {/* Accordion Header */}
@@ -103,25 +100,25 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
                                         className="w-full p-4 flex items-center gap-3 text-left hover:bg-white/5 transition-colors"
                                     >
                                         {/* Icon */}
-                                        <span className="text-xl">{getAgentIcon(agent.name)}</span>
+                                        {/* Icon removed */}
 
                                         {/* Status indicator */}
                                         <span
                                             className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isDone
-                                                    ? "bg-emerald-500"
-                                                    : isError
-                                                        ? "bg-red-500"
-                                                        : "bg-blue-500 animate-pulse shadow-lg shadow-blue-500/50"
+                                                ? "bg-emerald-500"
+                                                : isError
+                                                    ? "bg-red-500"
+                                                    : "bg-blue-500 animate-pulse shadow-lg shadow-blue-500/50"
                                                 }`}
                                         ></span>
 
                                         {/* Agent name */}
                                         <span
                                             className={`font-semibold text-sm flex-1 ${isDone
-                                                    ? "text-zinc-500 line-through"
-                                                    : isError
-                                                        ? "text-red-300"
-                                                        : "text-blue-200"
+                                                ? "text-zinc-500 line-through"
+                                                : isError
+                                                    ? "text-red-300"
+                                                    : "text-blue-200"
                                                 }`}
                                         >
                                             {formatName(agent.name)}
