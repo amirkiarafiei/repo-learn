@@ -12,15 +12,29 @@ export async function GET(
 ) {
     try {
         const { id } = await params;
-        const metadataPath = path.join(TUTORIALS_DIR, id, "metadata.json");
+        const searchParams = request.nextUrl.searchParams;
+        const audience = searchParams.get("audience");
 
+        const rootMetadataPath = path.join(TUTORIALS_DIR, id, "metadata.json");
+        const audienceMetadataPath = audience ? path.join(TUTORIALS_DIR, id, audience, "metadata.json") : null;
+
+        let metadata = { threadId: null };
+
+        // 1. Read root metadata (contains stars, common info)
         try {
-            const content = await readFile(metadataPath, "utf-8");
-            return NextResponse.json(JSON.parse(content));
-        } catch {
-            // No metadata file exists yet
-            return NextResponse.json({ threadId: null });
+            const rootContent = await readFile(rootMetadataPath, "utf-8");
+            metadata = { ...metadata, ...JSON.parse(rootContent) };
+        } catch { /* ignore */ }
+
+        // 2. Read audience-specific metadata (contains threadId)
+        if (audienceMetadataPath) {
+            try {
+                const audienceContent = await readFile(audienceMetadataPath, "utf-8");
+                metadata = { ...metadata, ...JSON.parse(audienceContent) };
+            } catch { /* ignore */ }
         }
+
+        return NextResponse.json(metadata);
     } catch (error) {
         return NextResponse.json({ error: "Failed to read metadata" }, { status: 500 });
     }
@@ -34,25 +48,33 @@ export async function POST(
     try {
         const { id } = await params;
         const body = await request.json();
-        const tutorialDir = path.join(TUTORIALS_DIR, id);
-        const metadataPath = path.join(tutorialDir, "metadata.json");
+        const { audience, ...dataToSave } = body;
+
+        // Determine where to save based on content
+        // threadId and agent-specific status should go to audience subfolder if audience is provided
+        // Other things (like stars) go to root
+
+        let targetDir = path.join(TUTORIALS_DIR, id);
+        if (audience && (dataToSave.threadId !== undefined)) {
+            targetDir = path.join(targetDir, audience);
+        }
+
+        const metadataPath = path.join(targetDir, "metadata.json");
 
         // Ensure directory exists
-        await mkdir(tutorialDir, { recursive: true });
+        await mkdir(targetDir, { recursive: true });
 
-        // Read existing metadata if any
+        // Read existing metadata at targetPath if any
         let existingMetadata = {};
         try {
             const content = await readFile(metadataPath, "utf-8");
             existingMetadata = JSON.parse(content);
-        } catch {
-            // No existing metadata
-        }
+        } catch { /* ignore */ }
 
         // Merge and write
         const newMetadata = {
             ...existingMetadata,
-            ...body,
+            ...dataToSave,
             updatedAt: new Date().toISOString(),
         };
 

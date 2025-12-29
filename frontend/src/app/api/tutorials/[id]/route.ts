@@ -6,29 +6,53 @@ import path from "path";
 const TUTORIALS_DIR = path.join(process.cwd(), "..", "data", "tutorials");
 
 // GET /api/tutorials/[id] - Get tutorial files
+// Query params:
+//   - audience: "user" | "dev" (defaults to "user")
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const audience = searchParams.get("audience") || "user";
+
     const tutorialDir = path.join(TUTORIALS_DIR, id);
 
     try {
-        // Check for user/ subdirectory first (where tutorials are stored)
-        const userDir = path.join(tutorialDir, "user");
+        // Check for audience subdirectory first (user/ or dev/)
+        const audienceDir = path.join(tutorialDir, audience);
         let targetDir = tutorialDir;
 
         try {
-            await readdir(userDir);
-            targetDir = userDir;
+            const audienceEntries = await readdir(audienceDir);
+            if (audienceEntries.some(f => f.endsWith(".md"))) {
+                targetDir = audienceDir;
+            }
         } catch {
-            // No user subdir, use main dir
+            // Fallback: try opposite audience or main dir
+            const oppositeAudience = audience === "user" ? "dev" : "user";
+            const oppositeDir = path.join(tutorialDir, oppositeAudience);
+            try {
+                const oppEntries = await readdir(oppositeDir);
+                if (oppEntries.some(f => f.endsWith(".md"))) {
+                    targetDir = oppositeDir;
+                }
+            } catch {
+                // Use main dir
+            }
         }
 
         const entries = await readdir(targetDir, { withFileTypes: true });
         const files = entries
             .filter((e) => e.isFile() && e.name.endsWith(".md"))
             .map((e) => e.name);
+
+        if (files.length === 0) {
+            return NextResponse.json(
+                { error: "No tutorial files found" },
+                { status: 404 }
+            );
+        }
 
         // Read all markdown files
         const contents: Record<string, string> = {};
@@ -40,6 +64,7 @@ export async function GET(
         return NextResponse.json({
             id,
             name: id.replace(/_/g, "/"),
+            audience,
             files,
             contents,
         });

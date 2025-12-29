@@ -16,7 +16,7 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
             <div className="p-4 border-b border-zinc-900">
                 <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                        The Plan (TODOs)
+                        The Plan <span className="text-zinc-500 font-normal">(TODOs)</span>
                     </h3>
                     {todos.length > 0 && (
                         <span className="text-zinc-500 text-xs font-mono">
@@ -56,35 +56,35 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
                         {todos.map((todo, index) => (
                             <div
                                 key={index}
-                                className={`flex items-start gap-3 p-3 rounded-lg transition-all border ${todo.status === "completed"
-                                    ? "bg-[#0A0A0A] border-zinc-900"
+                                className={`flex items-start gap-2.5 p-2 rounded-lg transition-all border ${todo.status === "completed"
+                                    ? "bg-[#0A0A0A] border-zinc-900/50"
                                     : todo.status === "in_progress"
-                                        ? "bg-[#0A0A0A] border-amber-900/50 animate-border-glow"
-                                        : "bg-[#0A0A0A] border-zinc-900"
+                                        ? "bg-amber-500/5 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.05)]"
+                                        : "bg-[#0A0A0A] border-zinc-900/50"
                                     }`}
                             >
                                 {/* Status icon */}
                                 <div className="mt-0.5 flex-shrink-0">
                                     {todo.status === "completed" ? (
-                                        <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <div className="w-4 h-4 bg-zinc-800 border border-zinc-700 rounded-full flex items-center justify-center shadow-sm">
+                                            <svg className="w-2.5 h-2.5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                             </svg>
                                         </div>
                                     ) : todo.status === "in_progress" ? (
-                                        <div className="w-5 h-5 border-2 border-amber-500 rounded-full animate-pulse shadow-lg shadow-amber-500/30"></div>
+                                        <div className="w-4 h-4 border-2 border-amber-500/50 rounded-full animate-pulse shadow-lg shadow-amber-500/20"></div>
                                     ) : (
-                                        <div className="w-5 h-5 border-2 border-zinc-600 rounded-full"></div>
+                                        <div className="w-4 h-4 border-2 border-zinc-800 rounded-full"></div>
                                     )}
                                 </div>
 
                                 {/* Task content */}
                                 <span
-                                    className={`text-sm flex-1 leading-relaxed ${todo.status === "completed"
-                                        ? "text-zinc-500 line-through"
+                                    className={`text-xs flex-1 leading-relaxed ${todo.status === "completed"
+                                        ? "text-zinc-600 line-through"
                                         : todo.status === "in_progress"
-                                            ? "text-amber-200 font-medium"
-                                            : "text-zinc-300"
+                                            ? "text-amber-400/90 font-medium"
+                                            : "text-zinc-400"
                                         }`}
                                 >
                                     {todo.content}

@@ -95,10 +95,12 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
 
         const result: AgentMessage[] = [];
         const activeSubagents = new Map<string, SubagentStatus>();
+        // Map to track which tool_call_id belongs to which subagent name
+        const toolCallToAgent = new Map<string, string>();
 
         for (const msg of stream.messages) {
             const rawMsg = msg as unknown as Record<string, unknown>;
-            const toolCalls = rawMsg.tool_calls as Array<{ name: string; args: Record<string, unknown> }> | undefined;
+            const toolCalls = rawMsg.tool_calls as Array<{ id: string; name: string; args: Record<string, unknown> }> | undefined;
 
             // Detect task tool calls (subagent delegation)
             if (toolCalls) {
@@ -114,6 +116,10 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
                                 startedAt: new Date(),
                                 activityLogs: [`Started: ${description?.slice(0, 60) || "Analyzing..."}...`],
                             });
+                            // Store the mapping so we know when this specific task finishes
+                            if (tc.id) {
+                                toolCallToAgent.set(tc.id, subagentType);
+                            }
                         }
                     }
                 }
@@ -121,8 +127,22 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
 
             // Detect tool results from task (subagent completion)
             if (rawMsg.type === "tool" && rawMsg.name === "task") {
-                // A task tool result means a subagent completed
-                // We can't easily match which one, so leave them running until onFinish
+                const toolCallId = rawMsg.tool_call_id as string;
+                const agentName = toolCallToAgent.get(toolCallId);
+                if (agentName) {
+                    setSubagents(prev => {
+                        const updated = new Map(prev);
+                        const existing = updated.get(agentName);
+                        if (existing && existing.status === "running") {
+                            updated.set(agentName, {
+                                ...existing,
+                                status: "done",
+                                completedAt: new Date()
+                            });
+                        }
+                        return updated;
+                    });
+                }
             }
 
             result.push({

@@ -42,7 +42,7 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
             <div className="p-4 border-b border-zinc-900">
                 <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                        The Workers (Sub-agents)
+                        The Workers <span className="text-zinc-500 font-normal">(Sub-agents)</span>
                     </h3>
                     {subagents.length > 0 && (
                         <span className="text-zinc-500 text-xs font-mono">
