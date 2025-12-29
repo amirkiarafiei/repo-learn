@@ -32,6 +32,30 @@ function TutorialPageContent() {
     const [error, setError] = useState<string | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
+    const [exporting, setExporting] = useState<string | null>(null);
+
+    const handleExport = async (type: "markdown" | "pdf") => {
+        setExporting(type);
+        try {
+            const res = await fetch(`/api/tutorials/${encodeURIComponent(id)}/export?type=${type}&audience=${audience}`);
+            if (!res.ok) throw new Error("Export failed");
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${id}_${audience}_${type}_export.zip`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (e) {
+            alert("Export failed. Please try again.");
+        } finally {
+            setExporting(null);
+        }
+    };
+
     useEffect(() => {
         async function fetchTutorial() {
             try {
@@ -113,7 +137,7 @@ function TutorialPageContent() {
                     </div>
 
                     {/* Centered Visualization Panel button */}
-                    <div className="flex-1 flex justify-center">
+                    <div className="flex-1 flex justify-center items-center gap-3">
                         {metadata?.threadId && (
                             <Link
                                 href={`/job/${metadata.threadId}?readonly=true&tutorial=${encodeURIComponent(id)}`}
@@ -126,6 +150,26 @@ function TutorialPageContent() {
                                 Visualization Panel
                             </Link>
                         )}
+
+                        <div className="h-4 w-px bg-zinc-800" />
+
+                        {/* Export Dropdown (Simplified as two buttons for now for better direct access) */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handleExport("markdown")}
+                                disabled={!!exporting}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 text-xs transition-colors disabled:opacity-50"
+                            >
+                                {exporting === "markdown" ? "Exporting..." : "MD Zip"}
+                            </button>
+                            <button
+                                onClick={() => handleExport("pdf")}
+                                disabled={!!exporting}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 text-xs transition-colors disabled:opacity-50"
+                            >
+                                {exporting === "pdf" ? "Exporting..." : "PDF Zip"}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2">
