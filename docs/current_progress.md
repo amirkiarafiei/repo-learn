@@ -248,7 +248,51 @@ Access at: http://localhost:3000
 
 ---
 
-## 🎯 Next Steps for Production
+## 🔮 Future Roadmap (v0.2.0+)
+
+The following features have been analyzed for the next phase of development.
+
+### 1. Agent Visualization Dashboard
+*   **Goal**: Allow users to revisit the 3-panel agent visualization (Planner, Brain, Grid) after the job is complete.
+*   **Feasibility**: High. LangGraph supports persistent threads.
+*   **Difficulty**: Medium. Requires Postgres checkpointer setup and frontend updates to fetch historical thread state.
+*   **Risk**: Low. Standard LangGraph pattern.
+*   **Priority**: **Medium**. Enhances auditability and "wow" factor.
+
+### 2. Dual Audience Separation (User/Dev)
+*   **Goal**: Explicitly separate "User" and "Developer" versions of tutorials with distinct cards and badges.
+*   **Feasibility**: High. Backend already supports audience paths.
+*   **Difficulty**: Low/Medium. UI changes to grid layout and storage API updates.
+*   **Risk**: Low. Minor data structure changes.
+*   **Priority**: **High**. Core functionality improvement for target audience clarity.
+
+### 3. Tutorial Export (PDF/Zip)
+*   **Goal**: Export tutorials as downloadable .zip archives or PDF documents.
+*   **Feasibility**: High.
+*   **Difficulty**: Medium. Zip is easy; PDF requires robust converters (e.g., pandoc or headless browser).
+*   **Risk**: Low. Isolated feature.
+*   **Priority**: **Low/Medium**. Quality of life enhancement.
+
+### 4. Interactive "Learning IDE" Interface
+*   **Goal**: Transform Tutorial Viewer into a tabbed "Learning IDE".
+    *   Magnifier button for codebase search.
+    *   Tabbed interface for multiple open files (code & docs).
+    *   Syntax highlighting for code files.
+*   **Feasibility**: Medium. Complex state management.
+*   **Difficulty**: **High**. Requires full file explorer, search API (ripgrep), and robust tab state.
+*   **Risk**: High. Significant scope increase; risks cluttering the UI.
+*   **Priority**: **High**. Transformative feature that differentiates RepoLearn from static doc generators.
+
+### 5. Smart Contextual References
+*   **Goal**: Agent generates clickable links to code files/websites that open in new IDE tabs.
+*   **Feasibility**: Medium.
+*   **Difficulty**: Medium. Requires prompt engineering for link formats and custom Markdown rendering logic.
+*   **Risk**: Medium. LLM may generate broken or hallucinated paths.
+*   **Priority**: **Medium**. Critical companion to Feature #4.
+
+---
+
+## 🎯 Production Readiness Steps
 
 1. **Deployment**: Containerize with Docker, add Postgres for checkpoints
 2. **Authentication**: Add user accounts for private tutorials
