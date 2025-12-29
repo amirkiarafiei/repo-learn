@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense, useCallback } from "react";
 import Link from "next/link";
 import { useAgentStream } from "@/hooks/useAgentStream";
@@ -12,6 +12,7 @@ import { GridPanel } from "@/components/GridPanel";
 function JobPageContent() {
     const params = useParams();
     const searchParams = useSearchParams();
+    const router = useRouter();
     const jobId = params.id as string;
 
     // Get mode and params from query
@@ -54,24 +55,38 @@ function JobPageContent() {
     }, []);
 
     // Auto-start analysis when page loads with a URL (live mode only)
-    useEffect(() => {
-        if (!isReadonly && githubUrl && !hasStarted && !liveStream.isLoading) {
-            setHasStarted(true);
-            liveStream.submitAnalysis(githubUrl, audience);
-        }
-    }, [isReadonly, githubUrl, hasStarted, liveStream, audience]);
+    const { submitAnalysis, isLoading: streamLoading } = liveStream;
 
-    // Save thread ID when complete
+    // Auto-start analysis when page loads with a URL (live mode only)
     useEffect(() => {
+        if (isReadonly || !githubUrl || isComplete) return;
+
+        // Use a ref or simple check to ensure we only run once
+        if (!hasStarted && !streamLoading) {
+            setHasStarted(true);
+            submitAnalysis(githubUrl, audience);
+        }
+    }, [isReadonly, githubUrl, hasStarted, streamLoading, submitAnalysis, audience, isComplete]);
+
+    // Save thread ID and Redirect when complete (only if no error)
+    useEffect(() => {
+        // Don't redirect if there's an error
+        if (error) return;
+
         if (isComplete && githubUrl && liveStream.threadId) {
-            // Convert github URL to repo ID format (e.g., "unjs_destr")
+            // Convert github URL to repo ID format
             const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
             if (match) {
                 const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "");
                 saveThreadMetadata(repoId, liveStream.threadId, audience);
+
+                // Redirect to tutorial page using repoId
+                if (!isReadonly) {
+                    router.push(`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`);
+                }
             }
         }
-    }, [isComplete, githubUrl, liveStream.threadId, audience, saveThreadMetadata]);
+    }, [isComplete, githubUrl, liveStream.threadId, audience, saveThreadMetadata, isReadonly, router, error]);
 
     // Calculate status
     const status = isReadonly

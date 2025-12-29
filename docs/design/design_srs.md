@@ -158,21 +158,21 @@ This section documents how the SRS requirements were realized in the MVP.
 
 ### 8.1 Requirements Traceability Matrix
 
-| Requirement                | Status     | Implementation                                |
-| -------------------------- | ---------- | --------------------------------------------- |
-| **3.1 User Workflow**      | ✅ Complete | Home → New → Job → Tutorial pages             |
-| **3.2 Deep Agent**         | ✅ Complete | `graph.py` with BRAIN_PROMPT                  |
-| **3.2 TodoListMiddleware** | ✅ Complete | Built into DeepAgents                         |
-| **3.2 SubAgentMiddleware** | ✅ Complete | `subagents.py` definitions                    |
-| **3.2 Event Streaming**    | ✅ Complete | `useAgentStream.ts` hook                      |
-| **3.3 Sidecar API**        | ⚠️ Partial  | API routes in Next.js instead of FastAPI      |
-| **4.1 3-Panel Layout**     | ✅ Complete | PlannerPanel, BrainPanel, GridPanel           |
-| **4.2 Tutorial Viewer**    | ✅ Complete | Markdown + Typography plugin                  |
-| **5 Non-Functional**       | ✅ Complete | SSE streaming, thread persistence, dark theme |
-| **7.1 Advanced UI**        | ⏳ Deferred | Semantic updates, chat interface              |
-| **7.2 Manager Layer**      | ⏳ Deferred | Supervisor agent                              |
-| **7.3 Cost Estimation**    | ⏳ Deferred | Token counting, live metrics                  |
-| **7.3 Resumability**       | ⏳ Deferred | Skip completed phases                         |
+| Requirement                | Status     | Implementation                                    |
+| -------------------------- | ---------- | ------------------------------------------------- |
+| **3.1 User Workflow**      | ✅ Complete | Home → New → Job → Tutorial pages                 |
+| **3.2 Deep Agent**         | ✅ Complete | `graph.py` with BRAIN_PROMPT                      |
+| **3.2 TodoListMiddleware** | ✅ Complete | Built into DeepAgents                             |
+| **3.2 SubAgentMiddleware** | ✅ Complete | `subagents.py` definitions                        |
+| **3.2 Event Streaming**    | ✅ Complete | `useAgentStream.ts` hook                          |
+| **3.3 Sidecar API**        | ✅ Complete | API routes in Next.js (tutorials, storage, repos) |
+| **4.1 3-Panel Layout**     | ✅ Complete | PlannerPanel, BrainPanel, GridPanel               |
+| **4.2 Tutorial Viewer**    | ✅ Complete | Interactive Learning IDE with tabs                |
+| **5 Non-Functional**       | ✅ Complete | SSE streaming, thread persistence, dark theme     |
+| **7.1 Advanced UI**        | ⚠️ Partial  | IDE implemented, semantic updates deferred        |
+| **7.2 Manager Layer**      | ⏳ Deferred | Supervisor agent                                  |
+| **7.3 Cost Estimation**    | ⏳ Deferred | Token counting, live metrics                      |
+| **7.3 Resumability**       | ⏳ Deferred | Skip completed phases                             |
 
 ### 8.2 Architecture Deviation: Sidecar vs API Routes
 
@@ -185,10 +185,14 @@ The original SRS specified a separate FastAPI sidecar. In the MVP, we use **Next
 
 **Implemented Routes:**
 ```
-/api/tutorials         GET    List all tutorials
-/api/tutorials/[id]    GET    Get tutorial content
-/api/storage           GET    Storage stats
-/api/storage           DELETE Delete tutorial/cache
+/api/tutorials              GET    List all tutorials
+/api/tutorials/[id]         GET    Get tutorial content
+/api/tutorials/[id]/export  GET    Export as zip (markdown/pdf)
+/api/tutorials/[id]/metadata GET/POST  Thread metadata
+/api/storage                GET    Storage stats
+/api/storage                DELETE Delete tutorial/cache
+/api/repositories/[id]/files GET    List repo files
+/api/repositories/[id]/file  GET    Get file content
 ```
 
 ### 8.3 Streaming Implementation Details
@@ -283,6 +287,16 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 4. **Single Model**: No model selection UI
 5. **No Edit Mode**: Tutorial viewer is read-only
 
+### 8.9 v0.2.0 New Features
+
+| Feature                      | Description                       | Component                      |
+| ---------------------------- | --------------------------------- | ------------------------------ |
+| Interactive Learning IDE     | Tab-based file viewer with search | `TabBar.tsx`, `CodeViewer.tsx` |
+| Smart Contextual References  | Clickable code links in docs      | Custom Markdown renderer       |
+| Agent Visualization Playback | Readonly thread history view      | `useThreadHistory.ts`          |
+| Tutorial Export              | Download as Markdown/PDF zip      | `/api/tutorials/[id]/export`   |
+| Inline Sidebar Toggle        | Compact sidebar header            | `page.tsx` (tutorial)          |
+
 ---
 
 ## 9. Acceptance Criteria Validation
@@ -308,5 +322,5 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 
 ---
 
-*Document updated: December 28, 2024*
+*Document updated: December 30, 2024 (v0.2.0)*
 

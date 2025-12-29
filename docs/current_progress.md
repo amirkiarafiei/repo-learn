@@ -1,7 +1,8 @@
 # RepoLearn - Current Progress & Status
 
-**Last Updated:** December 28, 2024  
-**MVP Status:** ✅ Complete (Phases 0-7)
+**Last Updated:** December 30, 2024  
+**Version:** v0.2.0  
+**Status:** ✅ Complete (Phases 0-9)
 
 ---
 
@@ -66,6 +67,27 @@ RepoLearn is a fully functional MVP demonstrating the **Deep Agent methodology**
 - [x] Gradient text for branding
 - [x] Progress bars with smooth transitions
 - [x] Typing cursor animations
+
+### Phase 8: Interactive Learning IDE ✅ (v0.2.0)
+- [x] Tab-based interface for multiple open files
+- [x] Search bar with fuzzy file search (Fuse.js)
+- [x] Syntax highlighting for code files (react-syntax-highlighter)
+- [x] Collapsible sidebar with inline toggle
+- [x] Repository file API (`/api/repositories/[id]/files`)
+- [x] CodeViewer component with line numbers
+
+### Phase 9: Smart Contextual References ✅ (v0.2.0)
+- [x] Agent prompts updated to generate code file links
+- [x] Custom Markdown link interception
+- [x] Clickable file references open in IDE tabs
+- [x] Visual styling for contextual links
+
+### Phase 10: Agent Visualization & Export (v0.2.0)
+- [x] Thread history playback (readonly mode)
+- [x] "View Agent Visualization" button in tutorial header
+- [x] Tutorial export (Markdown & PDF zip)
+- [x] Dual audience separation (User/Dev tabs)
+- [x] Auto-redirect to tutorial on completion
 
 ---
 
@@ -248,47 +270,25 @@ Access at: http://localhost:3000
 
 ---
 
-## 🔮 Future Roadmap (v0.2.0+)
+## 🔮 Future Roadmap (v0.3.0+)
 
-The following features have been analyzed for the next phase of development.
+### Completed in v0.2.0 ✅
+- ~~Agent Visualization Dashboard~~ → Implemented (readonly thread playback)
+- ~~Dual Audience Separation~~ → Implemented (User/Dev toggle)
+- ~~Tutorial Export~~ → Implemented (Markdown & PDF zip)
+- ~~Interactive Learning IDE~~ → Implemented (tabs, search, syntax highlighting)
+- ~~Smart Contextual References~~ → Implemented (clickable code links)
 
-### 1. Agent Visualization Dashboard
-*   **Goal**: Allow users to revisit the 3-panel agent visualization (Planner, Brain, Grid) after the job is complete.
-*   **Feasibility**: High. LangGraph supports persistent threads.
-*   **Difficulty**: Medium. Requires Postgres checkpointer setup and frontend updates to fetch historical thread state.
-*   **Risk**: Low. Standard LangGraph pattern.
-*   **Priority**: **Medium**. Enhances auditability and "wow" factor.
+### Planned for v0.3.0
 
-### 2. Dual Audience Separation (User/Dev)
-*   **Goal**: Explicitly separate "User" and "Developer" versions of tutorials with distinct cards and badges.
-*   **Feasibility**: High. Backend already supports audience paths.
-*   **Difficulty**: Low/Medium. UI changes to grid layout and storage API updates.
-*   **Risk**: Low. Minor data structure changes.
-*   **Priority**: **High**. Core functionality improvement for target audience clarity.
-
-### 3. Tutorial Export (PDF/Zip)
-*   **Goal**: Export tutorials as downloadable .zip archives or PDF documents.
-*   **Feasibility**: High.
-*   **Difficulty**: Medium. Zip is easy; PDF requires robust converters (e.g., pandoc or headless browser).
-*   **Risk**: Low. Isolated feature.
-*   **Priority**: **Low/Medium**. Quality of life enhancement.
-
-### 4. Interactive "Learning IDE" Interface
-*   **Goal**: Transform Tutorial Viewer into a tabbed "Learning IDE".
-    *   Magnifier button for codebase search.
-    *   Tabbed interface for multiple open files (code & docs).
-    *   Syntax highlighting for code files.
-*   **Feasibility**: Medium. Complex state management.
-*   **Difficulty**: **High**. Requires full file explorer, search API (ripgrep), and robust tab state.
-*   **Risk**: High. Significant scope increase; risks cluttering the UI.
-*   **Priority**: **High**. Transformative feature that differentiates RepoLearn from static doc generators.
-
-### 5. Smart Contextual References
-*   **Goal**: Agent generates clickable links to code files/websites that open in new IDE tabs.
-*   **Feasibility**: Medium.
-*   **Difficulty**: Medium. Requires prompt engineering for link formats and custom Markdown rendering logic.
-*   **Risk**: Medium. LLM may generate broken or hallucinated paths.
-*   **Priority**: **Medium**. Critical companion to Feature #4.
+| Feature                   | Description                              | Priority |
+| ------------------------- | ---------------------------------------- | -------- |
+| Mermaid Diagram Rendering | Add rehype-mermaid for diagram support   | Medium   |
+| Cost Estimation           | Pre-flight token counting, live metrics  | Low      |
+| Resumability              | Skip already-completed phases on restart | Medium   |
+| Manager/Supervisor Agent  | QA layer above the Deep Agent            | Low      |
+| Edit Mode in Viewer       | Manual correction of generated content   | Low      |
+| Production Deployment     | Docker, Postgres checkpointing           | High     |
 
 ---
 
@@ -303,4 +303,4 @@ The following features have been analyzed for the next phase of development.
 
 ---
 
-*RepoLearn v0.1.0 MVP - Deep Agents for Codebase Understanding*
+*RepoLearn v0.2.0 - Interactive Learning IDE with Smart References*

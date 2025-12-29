@@ -224,7 +224,32 @@ function TutorialPageContent() {
                     ) : (
                         <article className="flex-1 overflow-y-auto p-8 relative">
                             <div className="max-w-4xl mx-auto prose prose-invert prose-zinc prose-headings:font-semibold prose-a:text-blue-400 prose-code:text-emerald-400 prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-zinc-800 pb-20">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        a: ({ href, children }) => {
+                                            const isExternal = href?.startsWith("http") || href?.startsWith("https");
+                                            const isAnchor = href?.startsWith("#");
+
+                                            // Intercept relative file paths
+                                            if (!isExternal && !isAnchor && href) {
+                                                return (
+                                                    <button
+                                                        onClick={() => handleFileSelect(href)}
+                                                        className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline cursor-pointer bg-blue-900/20 px-1.5 py-0.5 rounded mx-0.5 font-mono text-[0.9em] transition-colors"
+                                                        title={`Open ${href} in editor`}
+                                                    >
+                                                        <svg className="w-3 h-3 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                        </svg>
+                                                        {children}
+                                                    </button>
+                                                );
+                                            }
+                                            return <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{children}</a>;
+                                        }
+                                    }}
+                                >
                                     {tutorial.contents[activeTab] || "No content"}
                                 </ReactMarkdown>
                             </div>
