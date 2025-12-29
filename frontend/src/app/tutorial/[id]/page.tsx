@@ -153,22 +153,37 @@ function TutorialPageContent() {
 
                         <div className="h-4 w-px bg-zinc-800" />
 
-                        {/* Export Dropdown (Simplified as two buttons for now for better direct access) */}
-                        <div className="flex items-center gap-2">
+                        {/* Export Dropdown */}
+                        <div className="relative group">
                             <button
-                                onClick={() => handleExport("markdown")}
-                                disabled={!!exporting}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 text-xs transition-colors disabled:opacity-50"
+                                className="flex items-center gap-2 px-4 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 text-sm transition-colors"
                             >
-                                {exporting === "markdown" ? "Exporting..." : "MD Zip"}
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a1 1 0 001 1h14a1 1 0 001-1v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                {exporting ? "Exporting..." : "Export Docs"}
+                                <svg className="w-3 h-3 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
                             </button>
-                            <button
-                                onClick={() => handleExport("pdf")}
-                                disabled={!!exporting}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 text-xs transition-colors disabled:opacity-50"
-                            >
-                                {exporting === "pdf" ? "Exporting..." : "PDF Zip"}
-                            </button>
+
+                            {/* Dropdown Menu - Opens on Hover/Group-Hover */}
+                            <div className="absolute right-0 top-full mt-1 w-40 py-1 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                <button
+                                    onClick={() => handleExport("markdown")}
+                                    disabled={!!exporting}
+                                    className="w-full text-left px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                                >
+                                    Markdown (.zip)
+                                </button>
+                                <button
+                                    onClick={() => handleExport("pdf")}
+                                    disabled={!!exporting}
+                                    className="w-full text-left px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                                >
+                                    PDF (.zip)
+                                </button>
+                            </div>
                         </div>
                     </div>
 
