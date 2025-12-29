@@ -141,9 +141,9 @@ function TutorialPageContent() {
                         {metadata?.threadId && (
                             <Link
                                 href={`/job/${metadata.threadId}?readonly=true&tutorial=${encodeURIComponent(id)}`}
-                                className="flex items-center gap-2 px-4 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 text-sm transition-colors"
+                                className="flex items-center gap-2 px-3 py-1 rounded-lg border border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 text-xs transition-colors"
                             >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
@@ -156,9 +156,9 @@ function TutorialPageContent() {
                         {/* Export Dropdown */}
                         <div className="relative group">
                             <button
-                                className="flex items-center gap-2 px-4 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 text-sm transition-colors"
+                                className="flex items-center gap-2 px-3 py-1 rounded-lg border border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50 text-xs transition-colors"
                             >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a1 1 0 001 1h14a1 1 0 001-1v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
                                 {exporting ? "Exporting..." : "Export Docs"}
@@ -172,14 +172,14 @@ function TutorialPageContent() {
                                 <button
                                     onClick={() => handleExport("markdown")}
                                     disabled={!!exporting}
-                                    className="w-full text-left px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                                    className="w-full text-left px-4 py-2 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-50"
                                 >
                                     Markdown (.zip)
                                 </button>
                                 <button
                                     onClick={() => handleExport("pdf")}
                                     disabled={!!exporting}
-                                    className="w-full text-left px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                                    className="w-full text-left px-4 py-2 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-50"
                                 >
                                     PDF (.zip)
                                 </button>
@@ -188,8 +188,8 @@ function TutorialPageContent() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-zinc-400 text-sm">Repository:</span>
-                        <span className="text-zinc-200 font-mono text-sm bg-zinc-800 px-2 py-1 rounded">
+                        <span className="text-zinc-400 text-xs">Repository:</span>
+                        <span className="text-zinc-300 font-mono text-xs bg-zinc-800/50 px-2 py-1 rounded border border-zinc-800">
                             {tutorial.name}
                         </span>
                     </div>
