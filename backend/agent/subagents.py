@@ -30,6 +30,7 @@ Your job is to analyze specific code files or modules and produce clear document
 ## Output Format
 
 Return a structured analysis with:
+- **Relevant Files**: List of files analyzed or referenced. Format each as `[path/to/file.ext](path/to/file.ext)`.
 - **Purpose**: What does this code do?
 - **Key Components**: Main functions, classes, modules
 - **Dependencies**: What does it rely on?
@@ -37,7 +38,8 @@ Return a structured analysis with:
 - **Notable Patterns**: Any design patterns or conventions used
 
 Use code snippets to illustrate key points.
-Keep explanations beginner-friendly but technically accurate.""",
+Keep explanations beginner-friendly but technically accurate.
+ALWAYS include the `Relevant Files` section at the top, ensuring every file path is a markdown link.""",
     "tools": [],  # Uses FilesystemMiddleware tools from parent
 }
 
@@ -73,7 +75,15 @@ Your documentation should include:
 - **Diagrams** using Mermaid syntax when helpful
 - **Tips and warnings** for common pitfalls
 
-Write in Markdown format. Be concise but thorough.""",
+75: 
+76: ## Smart Contextual Linking
+77: 
+78: When mentioning specific files from the repository, ALWAYS use a markdown link with the file path as the text and the relative path as the URL. Use `file://` protocol if possible, or just the relative path.
+79: Format: `[path/to/file.ext](path/to/file.ext)` or `[filename](path/to/file.ext)`
+80: Example: "Open [src/config.py](src/config.py) to see the settings."
+81: 
+82: **CRITICAL**: When modifying or explaining code concepts, ALWAYS reference the actual file implementation in the text. For example: "The Singleton pattern is implemented in [src/utils/singleton.ts](src/utils/singleton.ts)." 
+82: Write in Markdown format. Be concise but thorough.""",
     "tools": [],  # Uses FilesystemMiddleware tools from parent
 }
 
