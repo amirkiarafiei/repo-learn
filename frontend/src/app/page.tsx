@@ -285,19 +285,19 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={() => handleDelete(tutorial.id, tutorial.audience, "cache")}
-                          className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                          className="w-full text-left px-3 py-2 text-sm text-amber-400 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                         >
-                          <span className="text-amber-400">🗑</span>
+                          <span>⚡</span>
                           Delete Code
                         </button>
                       )}
                       <button
                         type="button"
-                        onClick={() => handleDelete(tutorial.id, tutorial.audience, "audience")}
-                        className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                        onClick={() => handleDelete(tutorial.id, tutorial.audience, "all")}
+                        className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                       >
-                        <span>✕</span>
-                        Delete {tutorial.audience === "user" ? "User" : "Dev"} Version
+                        <span>🗑</span>
+                        Delete All
                       </button>
                     </div>
                   )}

@@ -1,8 +1,8 @@
 # RepoLearn - Current Progress & Status
 
-**Last Updated:** December 30, 2024  
-**Version:** v0.2.0  
-**Status:** ✅ Complete (Phases 0-9)
+**Last Updated:** January 1, 2026
+**Version:** v0.2.1-hotfix
+**Status:** ✅ Complete (Phases 0-10)
 
 ---
 
@@ -88,6 +88,19 @@ RepoLearn is a fully functional MVP demonstrating the **Deep Agent methodology**
 - [x] Tutorial export (Markdown & PDF zip)
 - [x] Dual audience separation (User/Dev tabs)
 - [x] Auto-redirect to tutorial on completion
+
+### Phase 11: Robustness & Reliability 🛡️ (v0.2.1)
+- [x] **Smart Redirect Guard**: Pre-flight checks preventing 404 loops
+- [x] **Case-Insensitive API**: Robust handling of repository names on Linux
+- [x] **State Persistence**: Preserving audience context (`?audience=dev`) across navigation
+- [x] **Enhanced Error UI**: Detailed 404 pages with debugging context
+- [x] **RCA Documentation**: [Redirect Loop Analysis](./debugging/redirect_loop_rca.md)
+- [x] **Race Condition Fixes**: `useRef` guards for `submitAnalysis` and redirect logic
+- [x] **Completion Detection**: Proper `onFinish`/`onError` handling per LangGraph SDK specs
+- [x] **Subagent Status Tracking**: Reliable "done" state via `signalCompletion()` helper
+- [x] **View Tutorial Link Fix**: Convert GitHub URL to `owner_repo` format
+- [x] **Agent Prompt Enhancement**: Single `write_todos` call per response (prevents InvalidUpdateError)
+- [x] **Hidden Bugs Audit**: [Full Audit Report](./debugging/hidden_bugs_audit.md)
 
 ---
 

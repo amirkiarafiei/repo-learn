@@ -297,6 +297,14 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 | Tutorial Export              | Download as Markdown/PDF zip      | `/api/tutorials/[id]/export`   |
 | Inline Sidebar Toggle        | Compact sidebar header            | `page.tsx` (tutorial)          |
 
+### 8.10 v0.2.1 Robustness Improvements (Hotfix)
+
+| Improvement              | Problem Addressed              | Implementation                  |
+| ------------------------ | ------------------------------ | ------------------------------- |
+| **Smart Redirect Guard** | Redirect loops/404s on failure | Async check in `JobPage.tsx`    |
+| **Case-Insensitive API** | Linux filesystem mismatches    | Logic in `route.ts`, `tools.py` |
+| **State Persistence**    | Losing `audience` context      | Query param propagation         |
+
 ---
 
 ## 9. Acceptance Criteria Validation
@@ -322,5 +330,5 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 
 ---
 
-*Document updated: December 30, 2024 (v0.2.0)*
+*Document updated: January 1, 2026 (v0.2.1)*
 

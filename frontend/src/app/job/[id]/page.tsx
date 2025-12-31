@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState, Suspense, useCallback } from "react";
+import { useEffect, useState, Suspense, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useAgentStream } from "@/hooks/useAgentStream";
 import { useThreadHistory } from "@/hooks/useThreadHistory";
@@ -29,10 +29,18 @@ function JobPageContent() {
         }
     }
 
-    const [hasStarted, setHasStarted] = useState(false);
+    // ========================================
+    // FIX: Use refs for synchronous guards
+    // ========================================
+    const hasStartedRef = useRef(false);
+    const redirectAttemptedRef = useRef(false);
+
     const [isComplete, setIsComplete] = useState(false);
 
     // Use different hooks based on mode
+    // NOTE: For NEW analyses (live mode), we do NOT pass initialThreadId.
+    // LangGraph will create a new thread and return the ID via onThreadId callback.
+    // For READONLY mode, we use useThreadHistory which fetches existing thread state.
     const liveStream = useAgentStream({
         onComplete: () => setIsComplete(true),
     });
@@ -65,41 +73,53 @@ function JobPageContent() {
     // Auto-start analysis when page loads with a URL (live mode only)
     const { submitAnalysis, isLoading: streamLoading } = liveStream;
 
-    // Auto-start analysis when page loads with a URL (live mode only)
+    // ========================================
+    // FIX: Use ref-based guard to prevent double execution
+    // ========================================
     useEffect(() => {
         if (isReadonly || !githubUrl || isComplete) return;
 
-        // Use a ref or simple check to ensure we only run once
-        if (!hasStarted && !streamLoading) {
-            setHasStarted(true);
+        // Synchronous guard using ref - prevents race condition
+        if (!hasStartedRef.current && !streamLoading) {
+            hasStartedRef.current = true;
+            console.log("[JobPage] Starting analysis for:", githubUrl);
             submitAnalysis(githubUrl, audience);
         }
-    }, [isReadonly, githubUrl, hasStarted, streamLoading, submitAnalysis, audience, isComplete]);
+    }, [isReadonly, githubUrl, streamLoading, submitAnalysis, audience, isComplete]);
 
-    // Save thread ID and Redirect when complete (only if no error)
+    // ========================================
+    // FIX: Improved redirect logic with ref guard
+    // ========================================
     useEffect(() => {
-        // Don't redirect if there's an error
-        if (error) return;
+        // Don't redirect if there's an error or already attempted
+        if (error || redirectAttemptedRef.current) return;
 
         if (isComplete && githubUrl && liveStream.threadId) {
+            // Mark as attempted to prevent duplicate redirects
+            redirectAttemptedRef.current = true;
+
             const checkAndRedirect = async () => {
                 // Convert github URL to repo ID format
                 const url = githubUrl as string;
                 const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
                 if (match) {
                     const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "");
-                    saveThreadMetadata(repoId, liveStream.threadId, audience);
+                    console.log("[JobPage] Saving metadata and checking tutorial for:", repoId);
+
+                    // Save metadata first
+                    await saveThreadMetadata(repoId, liveStream.threadId!, audience);
 
                     // Check if tutorial actually exists before redirecting
                     try {
                         const res = await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`);
                         if (res.ok && !isReadonly) {
+                            console.log("[JobPage] Tutorial found, redirecting...");
                             router.push(`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`);
                         } else {
-                            console.error("Tutorial generation failed or file not found.");
+                            console.error("[JobPage] Tutorial not found. Status:", res.status);
                         }
                     } catch (e) {
-                        console.error("Error checking tutorial existence:", e);
+                        console.error("[JobPage] Error checking tutorial existence:", e);
                     }
                 }
             };
@@ -116,7 +136,7 @@ function JobPageContent() {
                 ? "analyzing"
                 : error
                     ? "error"
-                    : hasStarted
+                    : hasStartedRef.current
                         ? "processing"
                         : "idle";
 
@@ -183,14 +203,18 @@ function JobPageContent() {
                         </div>
 
                         {/* View Tutorial button (when complete, live mode only) */}
-                        {!isReadonly && isComplete && githubUrl && (
-                            <Link
-                                href={`/tutorial/${encodeURIComponent(githubUrl)}`}
-                                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors"
-                            >
-                                View Tutorial →
-                            </Link>
-                        )}
+                        {!isReadonly && isComplete && githubUrl && (() => {
+                            const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+                            const repoId = match ? `${match[1]}_${match[2]}`.replace(/\.git$/, "") : githubUrl;
+                            return (
+                                <Link
+                                    href={`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                    View Tutorial →
+                                </Link>
+                            );
+                        })()}
                     </div>
                 </div>
             </header>
