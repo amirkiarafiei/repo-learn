@@ -18,6 +18,7 @@ export default function NewRepository() {
         const params = new URLSearchParams({
             url: url,
             audience: audience,
+            depth: depth,
         });
         router.push(`/job/${jobId}?${params.toString()}`);
     };

@@ -229,7 +229,7 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
     }, [subagents]);
 
     // Submit a new analysis request with optimistic thread creation
-    const submitAnalysis = useCallback((githubUrl: string, audience: "user" | "dev" = "dev") => {
+    const submitAnalysis = useCallback((githubUrl: string, audience: "user" | "dev" = "dev", depth: "basic" | "detailed" = "basic") => {
         // Prevent duplicate submissions
         if (isSubmittingRef.current) {
             console.warn("[useAgentStream] submitAnalysis called while already submitting, ignoring");
@@ -245,12 +245,16 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
         const newThreadId = threadId ?? crypto.randomUUID();
         console.log("[useAgentStream] Submitting analysis with threadId:", newThreadId);
 
+        const depthInstruction = depth === "detailed"
+            ? "Provide a comprehensive, in-depth tutorial covering all aspects of the codebase in detail."
+            : "Provide a quick overview tutorial focusing on the main concepts and getting started.";
+
         stream.submit(
             {
                 messages: [
                     {
                         type: "human",
-                        content: `Please analyze this repository: ${githubUrl}\nTarget audience: ${audience}`,
+                        content: `Please analyze this repository: ${githubUrl}\nTarget audience: ${audience}\nTutorial depth: ${depth}\n\n${depthInstruction}`,
                     },
                 ],
             },

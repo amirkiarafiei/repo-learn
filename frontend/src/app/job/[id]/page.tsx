@@ -18,6 +18,7 @@ function JobPageContent() {
     // Get mode and params from query
     const githubUrl = searchParams.get("url");
     const audience = (searchParams.get("audience") as "user" | "dev") || "dev";
+    const depth = (searchParams.get("depth") as "basic" | "detailed") || "basic";
     const isReadonly = searchParams.get("readonly") === "true";
     let tutorialId = searchParams.get("tutorial"); // For linking back to tutorial
 
@@ -82,10 +83,10 @@ function JobPageContent() {
         // Synchronous guard using ref - prevents race condition
         if (!hasStartedRef.current && !streamLoading) {
             hasStartedRef.current = true;
-            console.log("[JobPage] Starting analysis for:", githubUrl);
-            submitAnalysis(githubUrl, audience);
+            console.log("[JobPage] Starting analysis for:", githubUrl, "depth:", depth);
+            submitAnalysis(githubUrl, audience, depth);
         }
-    }, [isReadonly, githubUrl, streamLoading, submitAnalysis, audience, isComplete]);
+    }, [isReadonly, githubUrl, streamLoading, submitAnalysis, audience, depth, isComplete]);
 
     // ========================================
     // FIX: Improved redirect logic with ref guard
