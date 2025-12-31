@@ -137,8 +137,8 @@ export default function TabBar({
                 {/* Search Bar Overlay */}
                 <div
                     className={`absolute right-0 top-full mt-2 w-72 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 flex flex-col overflow-hidden origin-top-right transition-all duration-200 ease-out z-50 ${searchOpen
-                            ? "opacity-100 scale-100 translate-y-0"
-                            : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+                        ? "opacity-100 scale-100 translate-y-0"
+                        : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
                         }`}
                 >
                     <div className="flex items-center px-3 py-2 border-b border-zinc-700 bg-zinc-800/50">
