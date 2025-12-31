@@ -26,7 +26,7 @@ function JobPageContent() {
     if (tutorialId && tutorialId.includes("github.com")) {
         const match = tutorialId.match(/github\.com\/([^/]+)\/([^/]+)/);
         if (match) {
-            tutorialId = `${match[1]}_${match[2]}`.replace(/\.git$/, "");
+            tutorialId = `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase();
         }
     }
 
@@ -104,7 +104,7 @@ function JobPageContent() {
                 const url = githubUrl as string;
                 const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
                 if (match) {
-                    const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "");
+                    const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase();
                     console.log("[JobPage] Saving metadata and checking tutorial for:", repoId);
 
                     // Save metadata first
@@ -206,7 +206,7 @@ function JobPageContent() {
                         {/* View Tutorial button (when complete, live mode only) */}
                         {!isReadonly && isComplete && githubUrl && (() => {
                             const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
-                            const repoId = match ? `${match[1]}_${match[2]}`.replace(/\.git$/, "") : githubUrl;
+                            const repoId = match ? `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase() : githubUrl;
                             return (
                                 <Link
                                     href={`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`}
