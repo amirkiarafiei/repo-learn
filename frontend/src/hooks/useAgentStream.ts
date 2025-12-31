@@ -2,7 +2,7 @@
 
 import { useStream } from "@langchain/langgraph-sdk/react";
 import type { Message } from "@langchain/langgraph-sdk";
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useState, useRef } from "react";
 
 // Types for our agent state
 // DeepAgents TodoListMiddleware uses: { status: "pending" | "in_progress" | "completed", content: string }
@@ -55,45 +55,78 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
     // Track subagent status by detecting task tool calls
     const [subagents, setSubagents] = useState<Map<string, SubagentStatus>>(new Map());
 
+    // Track if we've signaled completion (to avoid duplicate calls)
+    const hasCompletedRef = useRef(false);
+
+    // Guard against multiple submissions
+    const isSubmittingRef = useRef(false);
+
+    // Helper to signal completion (idempotent)
+    const signalCompletion = useCallback(() => {
+        if (hasCompletedRef.current) return;
+        hasCompletedRef.current = true;
+        console.log("[useAgentStream] Signaling completion");
+
+        // Mark all subagents as done
+        setSubagents(prev => {
+            const updated = new Map(prev);
+            updated.forEach((agent, name) => {
+                if (agent.status === "running") {
+                    updated.set(name, { ...agent, status: "done", completedAt: new Date() });
+                }
+            });
+            return updated;
+        });
+
+        // Unlock submission
+        isSubmittingRef.current = false;
+
+        // Call user's callback
+        options.onComplete?.();
+    }, [options]);
+
     const stream = useStream<AgentState>({
         apiUrl,
         assistantId: "agent",
         threadId: threadId,
-        onThreadId: setThreadId,
+        onThreadId: (newId) => {
+            console.log("[useAgentStream] Thread ID set:", newId);
+            setThreadId(newId);
+        },
         messagesKey: "messages",
-        // Capture todos and subagent activity from graph updates
+
+        // Capture todos from graph updates
         onUpdateEvent: (update) => {
             if (update && typeof update === 'object') {
                 const updateObj = update as Record<string, unknown>;
-                // Check if this update contains todos
                 if ('todos' in updateObj && Array.isArray(updateObj.todos)) {
+                    console.log("[useAgentStream] Todos updated:", updateObj.todos.length, "items");
                     setTodos(updateObj.todos as Todo[]);
                 }
             }
         },
-        onFinish: (state) => {
-            // If there's an error in the stream, DO NOT mark as complete
-            // This prevents redirecting to a broken tutorial page
-            // The 'stream' object from useStream isn't available here due to closure, 
-            // but we can trust the 'error' state will be propagated.
-            // However, onFinish is often called *before* error is set in React state.
-            // We'll rely on the parent component to ignore onComplete if error exists,
-            // or better: let's not call onComplete if the final state looks sparse/failed.
 
-            // Extract todos from final state
+        // Handle errors explicitly
+        onError: (error) => {
+            console.error("[useAgentStream] Stream error:", error);
+            isSubmittingRef.current = false;
+            // Don't signal completion on error - let the error state propagate
+        },
+
+        // Called when stream finishes (success OR after error handling)
+        onFinish: (state) => {
+            console.log("[useAgentStream] onFinish called with state:", state ? "present" : "null");
+
             const stateObj = state as unknown as AgentState | undefined;
-            if (stateObj?.todos) {
+
+            // Extract final todos if present
+            if (stateObj?.todos && stateObj.todos.length > 0) {
                 setTodos(stateObj.todos);
             }
-            // Mark all subagents as done
-            setSubagents(prev => {
-                const updated = new Map(prev);
-                updated.forEach((agent, name) => {
-                    updated.set(name, { ...agent, status: "done" });
-                });
-                return updated;
-            });
-            options.onComplete?.();
+
+            // Signal completion - the stream has finished
+            // We trust onFinish means the agent is done (errors would go to onError)
+            signalCompletion();
         },
     });
 
@@ -197,11 +230,20 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
 
     // Submit a new analysis request with optimistic thread creation
     const submitAnalysis = useCallback((githubUrl: string, audience: "user" | "dev" = "dev") => {
+        // Prevent duplicate submissions
+        if (isSubmittingRef.current) {
+            console.warn("[useAgentStream] submitAnalysis called while already submitting, ignoring");
+            return;
+        }
+        isSubmittingRef.current = true;
+        hasCompletedRef.current = false; // Reset completion flag for new analysis
+
         // Reset state for new analysis
         setTodos([]);
         setSubagents(new Map());
 
         const newThreadId = threadId ?? crypto.randomUUID();
+        console.log("[useAgentStream] Submitting analysis with threadId:", newThreadId);
 
         stream.submit(
             {
