@@ -305,6 +305,16 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 | **Case-Insensitive API** | Linux filesystem mismatches    | Logic in `route.ts`, `tools.py` |
 | **State Persistence**    | Losing `audience` context      | Query param propagation         |
 
+### 8.11 v0.3.0 Pre-Release Stabilization
+
+| Improvement                | Problem Addressed            | Implementation                    |
+| -------------------------- | ---------------------------- | --------------------------------- |
+| **Smart Depth Selection**  | One-size-fits-all generation | Basic/Detailed toggle in UI + LLM |
+| **Granular Storage**       | Wasting disk space           | "Delete Code" vs "Delete All"     |
+| **Universal Lowercase**    | Case-sensitivity 404 errors  | Unified lowercasing for all IDs   |
+| **Speed Mode Prompts**     | Slow development testing     | Brief response mode for agents    |
+| **README & Env Templates** | Difficult onboarding         | Root README & .env.example files  |
+
 ---
 
 ## 9. Acceptance Criteria Validation
@@ -330,5 +340,5 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 
 ---
 
-*Document updated: January 1, 2026 (v0.2.1)*
+*Document updated: January 1, 2026 (v0.3.0)*
 

@@ -1,8 +1,8 @@
 # RepoLearn - Current Progress & Status
 
 **Last Updated:** January 1, 2026
-**Version:** v0.2.1-hotfix
-**Status:** ✅ Complete (Phases 0-10)
+**Version:** v0.3.0
+**Status:** ✅ Released (v0.3.0)
 
 ---
 
@@ -101,6 +101,14 @@ RepoLearn is a fully functional MVP demonstrating the **Deep Agent methodology**
 - [x] **View Tutorial Link Fix**: Convert GitHub URL to `owner_repo` format
 - [x] **Agent Prompt Enhancement**: Single `write_todos` call per response (prevents InvalidUpdateError)
 - [x] **Hidden Bugs Audit**: [Full Audit Report](./debugging/hidden_bugs_audit.md)
+
+### Phase 12: Pre-Release Stabilization 🚀 (v0.3.0)
+- [x] **Smart Depth Control**: Select between "Basic" (overview) and "Detailed" (comprehensive) tutorial depth.
+- [x] **Universal Lowercase Mapping**: Unified repo naming (`owner_repo`.lower()) to prevent case-sensitivity 404s.
+- [x] **Granular Storage UI**: "Delete Code" (cache clear) vs "Delete All" for better data management.
+- [x] **Dev-Speed Optimization**: Implemented "Speed Mode" prompts for sub-agents to accelerate development testing.
+- [x] **Premium Documentation**: Brand new root `README.md` and complete project documentation overhaul.
+- [x] **Frontend Env Template**: Added `.env.example` for the Next.js application.
 
 ---
 
@@ -285,14 +293,14 @@ Access at: http://localhost:3000
 
 ## 🔮 Future Roadmap (v0.3.0+)
 
-### Completed in v0.2.0 ✅
-- ~~Agent Visualization Dashboard~~ → Implemented (readonly thread playback)
-- ~~Dual Audience Separation~~ → Implemented (User/Dev toggle)
-- ~~Tutorial Export~~ → Implemented (Markdown & PDF zip)
-- ~~Interactive Learning IDE~~ → Implemented (tabs, search, syntax highlighting)
-- ~~Smart Contextual References~~ → Implemented (clickable code links)
+### Completed in v0.3.0 ✅
+- [x] **Smart Depth Control** → Implemented (Basic/Detailed selection)
+- [x] **Granular Storage Control** → Implemented (Delete Code/All)
+- [x] **Universal Lowercase Mapping** → Implemented across UI/Backend
+- [x] **Speed Mode Testing** → Implemented for faster dev iteration
+- [x] **Enhanced Documentation** → New README & Env templates
 
-### Planned for v0.3.0
+### Planned for v0.4.0 (Roadmap)
 
 | Feature                   | Description                              | Priority |
 | ------------------------- | ---------------------------------------- | -------- |
@@ -316,4 +324,4 @@ Access at: http://localhost:3000
 
 ---
 
-*RepoLearn v0.2.0 - Interactive Learning IDE with Smart References*
+*RepoLearn v0.3.0 - Pre-Release Stabilization & Smart Depth Control*
