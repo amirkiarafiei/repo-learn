@@ -57,7 +57,10 @@ export async function POST(
         let targetDir = path.join(TUTORIALS_DIR, id);
 
         // Fix: Check for status as well, so "generating" status goes to the correct folder
-        const isAudienceSpecific = dataToSave.threadId !== undefined || dataToSave.status !== undefined;
+        const isAudienceSpecific =
+            dataToSave.threadId !== undefined ||
+            dataToSave.status !== undefined ||
+            dataToSave.snapshot !== undefined;
 
         console.log(`[API Metadata] POST id=${id} audience=${audience}`, { isAudienceSpecific, keys: Object.keys(dataToSave) });
 

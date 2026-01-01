@@ -9,6 +9,7 @@ interface ThreadHistoryState {
     todos: Todo[];
     subagents: SubagentStatus[];
     isLoading: boolean;
+    isSnapshot: boolean; // True if using local metadata instead of LangGraph server
     error: Error | null;
 }
 
@@ -16,12 +17,13 @@ interface ThreadHistoryState {
  * Hook to fetch historical thread state from LangGraph.
  * Uses the default persistence (pickle files) that langgraph dev provides.
  */
-export function useThreadHistory(threadId: string | null) {
+export function useThreadHistory(threadId: string | null, repoId?: string | null, audience?: string | null) {
     const [state, setState] = useState<ThreadHistoryState>({
         messages: [],
         todos: [],
         subagents: [],
         isLoading: true,
+        isSnapshot: false,
         error: null,
     });
 
@@ -36,16 +38,51 @@ export function useThreadHistory(threadId: string | null) {
         try {
             setState(prev => ({ ...prev, isLoading: true, error: null }));
 
+            // 1. First, try to fetch metadata to see if we have a snapshot
+            let snapshot: any = null;
+            if (repoId && audience) {
+                try {
+                    const metaRes = await fetch(`/api/tutorials/${encodeURIComponent(repoId)}/metadata?audience=${audience}`);
+                    if (metaRes.ok) {
+                        const meta = await metaRes.json();
+                        snapshot = meta.snapshot;
+                    }
+                } catch (e) {
+                    console.warn("[useThreadHistory] Failed to fetch metadata for snapshot check:", e);
+                }
+            }
+
             const client = new Client({ apiUrl });
 
-            // Get the current/final state of the thread
-            const threadState = await client.threads.getState(threadId);
+            // 2. Try to get the current/final state of the thread from server
+            let threadState;
+            try {
+                threadState = await client.threads.getState(threadId);
+            } catch (err: any) {
+                if (err.message?.includes("404") || err.status === 404) {
+                    // FALLBACK: Use snapshot if server returns 404
+                    if (snapshot) {
+                        console.log("[useThreadHistory] Server 404 - Falling back to local snapshot.");
+                        setState({
+                            messages: snapshot.messages || [],
+                            todos: snapshot.todos || [],
+                            subagents: snapshot.subagents || [],
+                            isLoading: false,
+                            isSnapshot: true,
+                            error: null,
+                        });
+                        return;
+                    }
+                    throw new Error("Session history lost (404). Local development server resets state if restarted.");
+                }
+                throw err;
+            }
 
-            // Extract data from the state
+            // 3. Extract data from the server state if successful
             const stateValues = threadState.values as Record<string, unknown> || {};
-
-            // Parse messages
             const rawMessages = (stateValues.messages || []) as Array<Record<string, unknown>>;
+
+            // ... (rest of parsing logic remains same) ...
             const messages: AgentMessage[] = rawMessages.map((msg) => ({
                 id: (msg.id as string) || crypto.randomUUID(),
                 type: (msg.type as "human" | "ai" | "tool") || "ai",
@@ -58,14 +95,12 @@ export function useThreadHistory(threadId: string | null) {
                 timestamp: new Date(),
             }));
 
-            // Parse todos
             const rawTodos = (stateValues.todos || []) as Array<{ status: string; content: string }>;
             const todos: Todo[] = rawTodos.map((t) => ({
                 status: t.status as "pending" | "in_progress" | "completed",
                 content: t.content,
             }));
 
-            // Extract subagents from task tool calls in messages
             const subagentsMap = new Map<string, SubagentStatus>();
             for (const msg of rawMessages) {
                 const toolCalls = msg.tool_calls as Array<{ name: string; args: Record<string, unknown> }> | undefined;
@@ -77,7 +112,7 @@ export function useThreadHistory(threadId: string | null) {
                             if (subagentType && !subagentsMap.has(subagentType)) {
                                 subagentsMap.set(subagentType, {
                                     name: subagentType,
-                                    status: "done", // Historical, so all are done
+                                    status: "done",
                                     currentTask: description?.slice(0, 100) || "Completed",
                                     activityLogs: [`Completed: ${description?.slice(0, 60) || "Task"}...`],
                                 });
@@ -92,6 +127,7 @@ export function useThreadHistory(threadId: string | null) {
                 todos,
                 subagents: Array.from(subagentsMap.values()),
                 isLoading: false,
+                isSnapshot: false,
                 error: null,
             });
         } catch (err) {
@@ -102,7 +138,7 @@ export function useThreadHistory(threadId: string | null) {
                 error: err instanceof Error ? err : new Error(String(err)),
             }));
         }
-    }, [threadId]);
+    }, [threadId, repoId, audience]);
 
     useEffect(() => {
         fetchHistory();

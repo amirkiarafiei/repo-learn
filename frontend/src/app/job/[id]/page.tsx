@@ -49,18 +49,17 @@ function JobPageContent() {
     // Use different hooks based on mode
     const isResuming = !isReadonly && activeJob?.id === jobId;
 
-    const liveAgent = usePersistentAgent();
-    // Monitor completion from live agent
-    useEffect(() => {
-        if (!isReadonly && liveAgent.status === "completed" && !isComplete) {
-            setIsComplete(true);
-            completeJob();
-            addToast("Tutorial generation complete!", "success");
-        }
-    }, [isReadonly, liveAgent.status, isComplete, completeJob, addToast]);
+    const liveAgent = usePersistentAgent({ disabled: isReadonly });
 
+    // Derive repoId for history fallback
+    const match = githubUrl?.match(/github\.com\/([^/]+)\/([^/]+)/);
+    const resolvedRepoId = match ? `${match[1]}_${match[2]}`.toLowerCase().replace(/\.git$/, "") : null;
 
-    const historyStream = useThreadHistory(isReadonly ? jobId : null);
+    const historyStream = useThreadHistory(
+        isReadonly ? jobId : null,
+        isReadonly ? resolvedRepoId : null,
+        isReadonly ? audience : null
+    );
 
     // Pick the right data source
     const messages = isReadonly ? historyStream.messages : liveAgent.messages;
@@ -76,17 +75,39 @@ function JobPageContent() {
     const threadId = isReadonly ? jobId : activeJob?.threadId;
 
     // Save thread ID and audience when job completes (for future dashboard access)
-    const saveThreadMetadata = useCallback(async (repoId: string, tid: string, aud: "user" | "dev") => {
+    const saveThreadMetadata = useCallback(async (repoId: string, tid: string, aud: "user" | "dev", snapshot?: any) => {
         try {
             await fetch(`/api/tutorials/${encodeURIComponent(repoId)}/metadata`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ threadId: tid, audience: aud }),
+                body: JSON.stringify({
+                    threadId: tid,
+                    audience: aud,
+                    snapshot: snapshot
+                }),
             });
+            console.log("[JobPage] Saved thread metadata & snapshot for:", repoId);
         } catch (err) {
             console.error("Failed to save thread metadata:", err);
         }
     }, []);
+
+    // Monitor completion from live agent and save snapshot
+    useEffect(() => {
+        if (!isReadonly && liveAgent.status === "completed" && !isComplete) {
+            setIsComplete(true);
+            completeJob();
+            addToast("Tutorial generation complete!", "success");
+
+            // Save snapshot to metadata for persistence
+            const match = githubUrl?.match(/github\.com\/([^/]+)\/([^/]+)/);
+            if (match && activeJob?.threadId) {
+                const repoId = `${match[1]}_${match[2]}`.toLowerCase().replace(/\.git$/, "");
+                saveThreadMetadata(repoId, activeJob.threadId, audience, liveAgent.snapshot);
+            }
+        }
+    }, [isReadonly, liveAgent.status, isComplete, completeJob, addToast, saveThreadMetadata, audience, githubUrl, activeJob?.threadId, liveAgent.snapshot]);
+
 
     // Pre-create tutorial directory before analysis starts
     const ensureTutorialDir = useCallback(async (repoId: string, aud: "user" | "dev") => {
@@ -438,7 +459,15 @@ function JobPageContent() {
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <span>Thread: {(threadId || jobId).slice(0, 8)}...</span>
                     <span>
-                        {isReadonly && <span className="text-purple-400 mr-2">[Read-Only]</span>}
+                        {isReadonly && historyStream.isSnapshot && (
+                            <span className="text-yellow-500/80 mr-3 flex items-center gap-1 inline-flex">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                </svg>
+                                Cached Snapshot
+                            </span>
+                        )}
+                        {isReadonly && !historyStream.isSnapshot && <span className="text-purple-400 mr-2">[Live History]</span>}
                         {(githubUrl || tutorialId) && (
                             <span className="text-zinc-400">{githubUrl || tutorialId}</span>
                         )}
