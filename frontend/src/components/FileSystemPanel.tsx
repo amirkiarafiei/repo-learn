@@ -127,13 +127,13 @@ export function FileSystemPanel({ repoId, audience, isCollapsed, onToggleCollaps
         <div className="flex flex-col border-r border-zinc-900 bg-black h-full border-t border-t-zinc-900">
             {/* Header / Toggle Bar */}
             <div
-                className="flex items-center justify-between p-3 cursor-pointer hover:bg-zinc-900/50 transition-colors bg-[#0A0A0A]"
+                className="flex items-center p-3 cursor-pointer hover:bg-zinc-900/50 transition-colors bg-[#0A0A0A]"
                 onClick={onToggleCollapse}
             >
                 <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    {isCollapsed ? <ChevronRight size={16} className="text-zinc-500" /> : <ChevronDown size={16} className="text-zinc-500" />}
                     <span>The Filesystem <span className="text-zinc-500 font-normal">(Virtual)</span> </span>
                 </div>
-                {isCollapsed ? <ChevronRight size={16} className="text-zinc-500" /> : <ChevronDown size={16} className="text-zinc-500" />}
             </div>
 
             {/* Content Area */}
