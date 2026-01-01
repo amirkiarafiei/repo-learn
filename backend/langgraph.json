@@ -6,5 +6,8 @@
     "graphs": {
         "agent": "./agent/graph.py:graph"
     },
+    "http": {
+        "app": "./agent/webapp.py:app"
+    },
     "env": ".env"
 }

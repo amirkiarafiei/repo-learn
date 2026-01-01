@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { SubagentStatus } from "@/hooks/useAgentStream";
+import { useState, useRef, useEffect } from "react";
+import { SubagentStatus, SubagentToolCall } from "@/hooks/useAgentStream";
 
 interface GridPanelProps {
     subagents: SubagentStatus[];
@@ -28,11 +28,6 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
             .split("-")
             .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
             .join(" ");
-    };
-
-    const getAgentIcon = (name: string) => {
-        // Returned empty string to remove emojis, can be replaced with SVGs if needed later
-        return "";
     };
 
     const completed = subagents.filter((a) => a.status === "done").length;
@@ -99,9 +94,6 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
                                         }}
                                         className="w-full p-4 flex items-center gap-3 text-left hover:bg-white/5 transition-colors"
                                     >
-                                        {/* Icon */}
-                                        {/* Icon removed */}
-
                                         {/* Status indicator */}
                                         <span
                                             className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isDone
@@ -123,6 +115,14 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
                                         >
                                             {formatName(agent.name)}
                                         </span>
+
+                                        {/* Tool call count badge */}
+                                        {agent.toolCalls && agent.toolCalls.length > 0 && (
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${isDone ? "bg-zinc-800 text-zinc-500" : "bg-blue-900/50 text-blue-300"
+                                                }`}>
+                                                {agent.toolCalls.length} calls
+                                            </span>
+                                        )}
 
                                         {/* Expand/collapse icon */}
                                         <svg
@@ -146,40 +146,23 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
                                     {/* Accordion Content */}
                                     {isExpanded && (
                                         <div className={`px-4 pb-4 border-t ${isDone ? "border-zinc-800" : "border-blue-500/20"}`}>
-                                            <div className="mt-3 space-y-2">
-                                                {agent.activityLogs.length > 0 ? (
-                                                    agent.activityLogs.slice(-3).map((log, idx) => (
-                                                        <p
-                                                            key={idx}
-                                                            className={`text-xs font-mono leading-relaxed ${isDone ? "text-zinc-600" : "text-zinc-400"
-                                                                }`}
-                                                        >
-                                                            <span className={isDone ? "text-zinc-700" : "text-blue-400"}>›</span> {log}
-                                                        </p>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-xs text-zinc-600 italic">No activity logged yet</p>
-                                                )}
-
-                                                {agent.currentTask && (
-                                                    <div className={`mt-3 pt-3 border-t ${isDone ? "border-zinc-800" : "border-blue-500/20"}`}>
-                                                        <p className={`text-xs ${isDone ? "text-zinc-600" : "text-zinc-400"}`}>
-                                                            <span className="font-semibold">Task:</span> {agent.currentTask}
-                                                        </p>
-                                                    </div>
-                                                )}
-
-                                                <div className={`mt-3 pt-3 border-t ${isDone ? "border-zinc-800" : "border-blue-500/20"} flex items-center justify-between`}>
-                                                    <span className={`flex items-center gap-2 text-xs ${isDone ? "text-emerald-600" : isError ? "text-red-400" : "text-blue-400"}`}>
-                                                        {isDone ? "✓ Completed" : isError ? "✗ Failed" : "⟳ Working..."}
-                                                    </span>
-                                                    {agent.startedAt && (
-                                                        <span className="text-xs text-zinc-600 font-mono">
-                                                            {agent.startedAt.toLocaleTimeString()}
-                                                        </span>
-                                                    )}
+                                            {/* Task description at top */}
+                                            {agent.currentTask && (
+                                                <div className="mt-3">
+                                                    <p className={`text-xs ${isDone ? "text-zinc-600" : "text-zinc-400"}`}>
+                                                        <span className="font-semibold">Task:</span> {agent.currentTask}
+                                                    </p>
                                                 </div>
-                                            </div>
+                                            )}
+
+                                            {/* Tool Calls Log Area */}
+                                            <ToolCallsLogArea
+                                                toolCalls={agent.toolCalls || []}
+                                                activityLogs={agent.activityLogs}
+                                                isDone={isDone}
+                                            />
+
+
                                         </div>
                                     )}
                                 </div>
@@ -189,5 +172,82 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
                 )}
             </div>
         </aside>
+    );
+}
+
+// Separate component for tool calls log area with auto-scroll
+interface ToolCallsLogAreaProps {
+    toolCalls: SubagentToolCall[];
+    activityLogs: string[];
+    isDone: boolean;
+}
+
+function ToolCallsLogArea({ toolCalls, activityLogs, isDone }: ToolCallsLogAreaProps) {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const prevToolCallsLengthRef = useRef(toolCalls.length);
+
+    // Auto-scroll to bottom when new tool calls are added
+    useEffect(() => {
+        if (toolCalls.length > prevToolCallsLengthRef.current && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
+        prevToolCallsLengthRef.current = toolCalls.length;
+    }, [toolCalls.length]);
+
+    // If we have tool calls, show them. Otherwise fall back to activity logs
+    const hasToolCalls = toolCalls.length > 0;
+
+    return (
+        <div className="mt-3">
+            <div
+                ref={scrollContainerRef}
+                className={`max-h-[100px] overflow-y-auto overflow-x-hidden scrollbar-thin ${isDone ? "scrollbar-thumb-zinc-800" : "scrollbar-thumb-blue-900/50"
+                    } scrollbar-track-transparent`}
+            >
+                <div className="space-y-1">
+                    {hasToolCalls ? (
+                        // Show tool calls
+                        toolCalls.map((tc, idx) => (
+                            <div
+                                key={tc.id || idx}
+                                className={`text-xs font-mono leading-relaxed flex items-start gap-1.5 tool-call-entry ${isDone ? "text-zinc-600" : "text-zinc-400"
+                                    }`}
+                            >
+                                <span className={`flex-shrink-0 ${isDone ? "text-zinc-700" : "text-blue-400"}`}>›</span>
+                                <span className={`flex-shrink-0 ${isDone ? "text-zinc-500" : "text-amber-400/80"}`}>
+                                    {tc.name}
+                                </span>
+                                {tc.briefArgs && (
+                                    <span className={`truncate ${isDone ? "text-zinc-600" : "text-zinc-500"}`}>
+                                        {tc.briefArgs}
+                                    </span>
+                                )}
+                            </div>
+                        ))
+                    ) : (
+                        // Fall back to activity logs
+                        activityLogs.length > 0 ? (
+                            activityLogs.map((log, idx) => (
+                                <p
+                                    key={idx}
+                                    className={`text-xs font-mono leading-relaxed ${isDone ? "text-zinc-600" : "text-zinc-400"}`}
+                                >
+                                    <span className={isDone ? "text-zinc-700" : "text-blue-400"}>›</span> {log}
+                                </p>
+                            ))
+                        ) : (
+                            <p className="text-xs text-zinc-600 italic">Waiting for activity...</p>
+                        )
+                    )}
+                </div>
+            </div>
+
+            {/* Scroll hint indicator */}
+            {hasToolCalls && toolCalls.length > 3 && (
+                <div className={`mt-1 text-center ${isDone ? "text-zinc-700" : "text-zinc-600"}`}>
+                    <span className="text-[9px] font-mono">↕ scroll</span>
+                </div>
+            )}
+        </div>
     );
 }

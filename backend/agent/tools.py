@@ -167,7 +167,17 @@ def complete_tutorial(github_url: str, audience: str, summary: str = "") -> str:
     
     try:
         if not metadata_path.exists():
-            return f"Error: Metadata file not found at {metadata_path}. Did you create the tutorial path first?"
+            # Try to create it if missing (recovery)
+            metadata_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(metadata_path, 'w') as f:
+                json.dump({
+                    "id": f"{repo_name}_{audience}",
+                    "repoId": repo_name,
+                    "githubUrl": github_url,
+                    "audience": audience, 
+                    "status": "pending",
+                    "createdAt": datetime.now().isoformat()
+                }, f)
             
         with open(metadata_path, 'r') as f:
             metadata = json.load(f)
@@ -175,6 +185,23 @@ def complete_tutorial(github_url: str, audience: str, summary: str = "") -> str:
         metadata["status"] = "completed"
         metadata["updatedAt"] = datetime.now().isoformat()
         metadata["summary"] = summary
+        
+        # SAVE TOOL CALLS LOG for historical view (Option B)
+        try:
+            from langgraph.config import get_config
+            from agent.tool_call_store import get_tool_call_store
+            
+            config = get_config()
+            thread_id = config.get("configurable", {}).get("thread_id")
+            
+            if thread_id:
+                store = get_tool_call_store()
+                tool_entries = store.get_entries(thread_id)
+                if tool_entries:
+                    metadata["subagent_tool_log"] = tool_entries
+        except Exception as e:
+            # Don't fail the whole completion if log saving fails
+            print(f"Warning: Failed to save tool call logs: {e}")
         
         with open(metadata_path, 'w') as f:
             json.dump(metadata, f, indent=2)

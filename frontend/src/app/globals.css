@@ -8,6 +8,7 @@
   --muted-foreground: #a1a1aa;
   --accent: #3b82f6;
   --accent-foreground: #ffffff;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -315,4 +316,69 @@ body {
   content: "▋";
   animation: blink 1s step-end infinite;
   color: #3b82f6;
+}
+
+/* ===== TOOL CALL LOG ANIMATIONS ===== */
+
+/* Slide up fade animation for new tool call entries */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tool-call-entry {
+  animation: slideUpFade 0.2s ease-out;
+}
+
+/* Global Scrollbar Reset for Dark Theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 20px !important;
+  border: 1px solid transparent !important;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+*::-webkit-scrollbar-button {
+  display: none !important;
+}
+
+/* Specific overrides for log areas */
+.scrollbar-thin {
+  scrollbar-width: thin !important;
+}
+
+.scrollbar-thumb-zinc-800::-webkit-scrollbar-thumb {
+  background: #27272a !important;
+}
+
+.scrollbar-thumb-blue-900\/50::-webkit-scrollbar-thumb {
+  background: rgba(30, 58, 138, 0.5) !important;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent !important;
 }
