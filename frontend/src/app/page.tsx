@@ -204,15 +204,14 @@ export default function Home() {
                 )}
               </div>
             </div>
-            {storage?.tutorials && storage.tutorials.length > 0 && (
-              <button
-                onClick={() => setShowDeleteAllModal(true)}
-                disabled={isWiping}
-                className="text-red-500 hover:text-red-400 text-[10px] font-bold uppercase tracking-widest transition-all px-4 py-2 rounded-lg hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 disabled:opacity-30"
-              >
-                {isWiping ? "Wiping..." : "Delete All"}
-              </button>
-            )}
+            {/* Delete All button - Always visible */}
+            <button
+              onClick={() => setShowDeleteAllModal(true)}
+              disabled={isWiping}
+              className="text-red-500 hover:text-red-400 text-[10px] font-bold uppercase tracking-widest transition-all px-4 py-2 rounded-lg hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 disabled:opacity-30"
+            >
+              {isWiping ? "Wiping..." : "Delete All"}
+            </button>
           </div>
 
           {loading ? (
