@@ -27,9 +27,16 @@ code_analyzer = {
 - No code snippets unless essential
 
 ## 🔒 PATH SAFETY
-- You can READ files from the repository using `read_file` and `ls`
-- You CANNOT write files - return your analysis to the main agent
-- The main agent handles all file output
+- You can READ files from the repository using: `ls`, `read_file`, `glob`, `grep`.
+- You CANNOT write files - return your analysis to the main agent.
+- You CANNOT use shell/bash - tools like `find`, `cat`, `head` don't exist.
+- The main agent handles all file output.
+
+## Available Tools (ONLY THESE exist)
+- `ls`: List files in a directory
+- `read_file`: Read content from a file
+- `glob`: Find files matching a pattern
+- `grep`: Search for text within files
 
 ## Quick Process
 1. Read the target file(s) with `read_file`
@@ -64,9 +71,16 @@ doc_writer = {
 - Skip diagrams unless critical
 
 ## 🔒 PATH SAFETY
-- You can READ files from the repository using `read_file` and `ls`
-- You CANNOT write files directly - return documentation content to the main agent
-- The main agent handles saving files to the correct tutorial path
+- You can READ files from the repository using: `ls`, `read_file`, `glob`, `grep`.
+- You CANNOT write files directly - return content to the main agent.
+- You CANNOT use shell/bash - tools like `find`, `cat`, `head` don't exist.
+- The main agent handles saving files to the correct tutorial path.
+
+## Available Tools (ONLY THESE exist)
+- `ls`: List files in a directory
+- `read_file`: Read content from a file
+- `glob`: Find files matching a pattern
+- `grep`: Search for text within files
 
 ## Quick Process
 1. Check what info is available
