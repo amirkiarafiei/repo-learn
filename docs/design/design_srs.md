@@ -109,7 +109,14 @@ The frontend API routes (`frontend/src/app/api/...`) act as the system's "operat
 
 ### 6.1 The 3-Panel Job Dashboard
 Located at `/job/[id]`, this dashboard is the heart of the visualization engine.
-- **Planner (Left)**: Renders the `todos` array from the graph state. Uses smooth progress bars and status icons.
+- **Panel Container (Left)**: Houses the Planner and FileSystem panels in a vertical stack.
+    - **Resizable Height**: The FileSystem panel is manually resizable via a draggable handle, with constraints (min 100px, max 70% height).
+    - **Dual-Accordion System**: Both panels are collapsible to maximize vertical space. 
+        - **Planner**: Collapses upwards to the top of the container.
+        - **FileSystem**: Collapses downwards to the bottom.
+        - **Space Management**: Collapsing one panel automatically allows the other to expand and fill the remaining vertical space.
+- **Planner (Left Top)**: Renders the `todos` array from the graph state. Uses smooth progress bars, status icons, and an accordion header that shows a progress summary (e.g., "3/5") even when closed.
+- **FileSystem (Left Bottom)**: Displays a unified directory tree combining the source repository and the generated `tutorials/` output.
 - **Brain (Center)**: A terminal-styled feed. It filters raw LangGraph messages to show only the Main Agent's high-level reasoning.
 - **Grid (Right)**: Visualizes the `task()` tool calls. Each card represents a sub-agent's "workspace" and completion status.
 
