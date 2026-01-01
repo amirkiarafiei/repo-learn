@@ -87,35 +87,48 @@ export function usePersistentAgent(options: UsePersistentAgentOptions = {}) {
 
     // --- Actions ---
 
-    const start = useCallback(async (jobId: string, repoId: string, audience: "user" | "dev", depth: "basic" | "detailed", githubUrl: string) => {
+    const start = useCallback(async (jobId: string, repoId: string, audience: "user" | "dev", depth: "basic" | "detailed", githubUrl: string, isContinuation: boolean = false) => {
         try {
             setState(prev => ({
                 ...prev,
                 isLoading: true,
                 status: "running",
                 error: null,
-                messages: [],
-                todos: [],
-                subagents: []
+                messages: isContinuation ? prev.messages : [],
+                todos: isContinuation ? prev.todos : [],
+                subagents: isContinuation ? prev.subagents : []
             }));
 
             const client = new Client({ apiUrl });
 
-            // 1. Create Thread
-            const thread = await client.threads.create();
-            const threadId = thread.thread_id;
-            console.log("[usePersistentAgent] Created thread:", threadId);
+            let threadId: string;
+            if (isContinuation && activeJob?.threadId) {
+                threadId = activeJob.threadId;
+                console.log("[usePersistentAgent] Resuming existing thread:", threadId);
+            } else {
+                // 1. Create Thread
+                const thread = await client.threads.create();
+                threadId = thread.thread_id;
+                console.log("[usePersistentAgent] Created new thread:", threadId);
+            }
 
             const depthInstruction = depth === "detailed"
                 ? "Provide a comprehensive, in-depth tutorial."
                 : "Provide a quick overview tutorial.";
 
+            const inputMessage = isContinuation
+                ? {
+                    type: "human",
+                    content: "Continue with the planning and doing the tasks. Review your todos and complete any remaining steps.",
+                }
+                : {
+                    type: "human",
+                    content: `Please analyze this repository: https://github.com/${repoId.replace("_", "/")}\nTarget audience: ${audience}\nTutorial depth: ${depth}\n\n${depthInstruction}`,
+                };
+
             const run = await client.runs.create(threadId, "agent", {
                 input: {
-                    messages: [{
-                        type: "human",
-                        content: `Please analyze this repository: https://github.com/${repoId.replace("_", "/")}\nTarget audience: ${audience}\nTutorial depth: ${depth}\n\n${depthInstruction}`,
-                    }]
+                    messages: [inputMessage]
                 },
                 streamMode: "values",
             });
@@ -130,6 +143,7 @@ export function usePersistentAgent(options: UsePersistentAgentOptions = {}) {
                 audience,
                 depth,
                 githubUrl,
+                continuationCount: isContinuation ? activeJob?.continuationCount : 0
             });
 
         } catch (err) {

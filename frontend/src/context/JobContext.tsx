@@ -12,6 +12,7 @@ export interface ActiveJob {
     startTime: number;
     depth: "basic" | "detailed";
     githubUrl: string;  // Original GitHub URL (e.g., https://github.com/owner/repo)
+    continuationCount?: number; // Number of times "Continue" was clicked
 }
 
 interface JobContextType {
@@ -19,6 +20,7 @@ interface JobContextType {
     startJob: (job: Omit<ActiveJob, "status" | "startTime">) => void;
     completeJob: () => void;
     clearJob: () => void;
+    updateJob: (updates: Partial<ActiveJob>) => void;
     isLoading: boolean; // True while hydrating from localStorage
 }
 
@@ -72,8 +74,14 @@ export function JobProvider({ children }: { children: ReactNode }) {
         setActiveJob(null);
     };
 
+    const updateJob = (updates: Partial<ActiveJob>) => {
+        if (activeJob) {
+            setActiveJob({ ...activeJob, ...updates });
+        }
+    };
+
     return (
-        <JobContext.Provider value={{ activeJob, startJob, completeJob, clearJob, isLoading }}>
+        <JobContext.Provider value={{ activeJob, startJob, completeJob, clearJob, updateJob, isLoading }}>
             {children}
         </JobContext.Provider>
     );
