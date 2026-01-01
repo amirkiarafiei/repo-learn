@@ -26,7 +26,7 @@ export function PlannerPanel({ todos, isLoading }: PlannerPanelProps) {
                 </div>
                 {/* Progress bar */}
                 {todos.length > 0 && (
-                    <div className="mt-3 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="mt-2 h-1 bg-zinc-800 rounded-full overflow-hidden">
                         <div
                             className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500 ease-out"
                             style={{ width: `${progress}%` }}

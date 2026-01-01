@@ -113,7 +113,7 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-zinc-800/50 px-4 py-2 bg-black sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-lg font-bold tracking-tight">
+          <h1 className="text-xl font-semibold tracking-tight">
             <span className="text-blue-600">Repo</span>
             <span className="text-white">Learn</span>
           </h1>
