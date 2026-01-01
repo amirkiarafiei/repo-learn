@@ -87,7 +87,7 @@ export function usePersistentAgent(options: UsePersistentAgentOptions = {}) {
 
     // --- Actions ---
 
-    const start = useCallback(async (jobId: string, repoId: string, audience: "user" | "dev", depth: "basic" | "detailed") => {
+    const start = useCallback(async (jobId: string, repoId: string, audience: "user" | "dev", depth: "basic" | "detailed", githubUrl: string) => {
         try {
             setState(prev => ({
                 ...prev,
@@ -129,6 +129,7 @@ export function usePersistentAgent(options: UsePersistentAgentOptions = {}) {
                 runId: run.run_id,
                 audience,
                 depth,
+                githubUrl,
             });
 
         } catch (err) {

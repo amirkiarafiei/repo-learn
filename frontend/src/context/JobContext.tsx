@@ -11,6 +11,7 @@ export interface ActiveJob {
     status: "generating" | "completed";
     startTime: number;
     depth: "basic" | "detailed";
+    githubUrl: string;  // Original GitHub URL (e.g., https://github.com/owner/repo)
 }
 
 interface JobContextType {
