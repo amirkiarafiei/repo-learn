@@ -150,31 +150,15 @@ export function FileSystemPanel({ repoId, audience, isCollapsed, onToggleCollaps
                     ) : error ? (
                         <div className="text-xs text-red-500 p-4 text-center">{error}</div>
                     ) : data ? (
-                        <div className="space-y-4">
-                            {/* Repos Section */}
-                            <div>
-                                <div className="px-2 py-1.5 text-[10px] uppercase font-bold tracking-wider text-zinc-600 mb-1">
-                                    Repositories (Read-Only)
-                                </div>
-                                <div className="border border-zinc-900 rounded-lg overflow-hidden bg-[#0A0A0A]/50">
-                                    <FileTreeItem node={data.repo} isRoot={true} defaultOpen={false} />
-                                </div>
-                            </div>
+                        <div className="flex flex-col gap-0.5">
+                            {/* Unified Root nodes */}
+                            <FileTreeItem node={data.repo} isRoot={true} defaultOpen={false} />
 
-                            {/* Tutorials Section */}
-                            <div>
-                                <div className="px-2 py-1.5 text-[10px] uppercase font-bold tracking-wider text-zinc-600 mb-1">
-                                    Generated Output (Write Access)
-                                </div>
-                                <div className="border border-emerald-900/20 rounded-lg overflow-hidden bg-emerald-950/5">
-                                    {/* Override root name to show meaningful context */}
-                                    <FileTreeItem
-                                        node={{ ...data.tutorial, name: `tutorials/${data.repo.name}/${data.tutorial.name}` }}
-                                        isRoot={true}
-                                        defaultOpen={true}
-                                    />
-                                </div>
-                            </div>
+                            <FileTreeItem
+                                node={{ ...data.tutorial, name: `tutorials/${data.repo.name}/${data.tutorial.name}` }}
+                                isRoot={true}
+                                defaultOpen={true}
+                            />
                         </div>
                     ) : null}
                 </div>
