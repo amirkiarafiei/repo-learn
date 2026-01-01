@@ -228,15 +228,29 @@ export async function DELETE(request: NextRequest) {
         console.log(`[Storage API] DELETE request for ${id} (audience: ${audience}, type: ${deleteType})`);
 
         if (deleteType === "all") {
-            // Full System Wipe
+            // Full System Wipe - Remove all contents but keep parent directories
             console.log(`[Storage API] PERFORMING FULL SYSTEM WIPE`);
-            await rm(TUTORIALS_DIR, { recursive: true, force: true }).catch(() => { });
-            await rm(REPOS_DIR, { recursive: true, force: true }).catch(() => { });
 
-            // Re-create empty directories
-            await mkdir(TUTORIALS_DIR, { recursive: true }).catch(() => { });
-            await mkdir(REPOS_DIR, { recursive: true }).catch(() => { });
+            // Helper to remove all contents of a directory without removing the directory itself
+            const wipeDirContents = async (dirPath: string) => {
+                try {
+                    const entries = await readdir(dirPath, { withFileTypes: true });
+                    for (const entry of entries) {
+                        const fullPath = path.join(dirPath, entry.name);
+                        await rm(fullPath, { recursive: true, force: true }).catch((err) => {
+                            console.error(`[Storage API] Failed to remove ${fullPath}:`, err);
+                        });
+                    }
+                } catch (err) {
+                    console.error(`[Storage API] Failed to read directory ${dirPath}:`, err);
+                }
+            };
 
+            // Wipe contents of both directories
+            await wipeDirContents(TUTORIALS_DIR);
+            await wipeDirContents(REPOS_DIR);
+
+            console.log(`[Storage API] System wipe complete. Directories preserved, contents removed.`);
             return NextResponse.json({ success: true, message: "System wiped successfully" });
         }
 
