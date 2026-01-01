@@ -158,7 +158,7 @@ function JobPageContent() {
 
                 console.log("[JobPage] Starting analysis for:", githubUrl, "depth:", depth);
 
-                start(jobId, repoId, audience, depth);
+                start(jobId, repoId, audience, depth, githubUrl);
             };
             startAnalysis();
         }
@@ -200,13 +200,27 @@ function JobPageContent() {
     const handleRetry = async () => {
         setShowRetryConfirm(false);
         stop();
+
+        // Capture current job data BEFORE clearing
+        const urlToRetry = activeJob?.githubUrl || githubUrl;  // Fallback for backward compat
+        const audienceToRetry = audience;
+        const depthToRetry = depth;
+
         clearJob();
 
         // Cleanup existing tutorial content before reloading
         await performSmartCleanup();
 
-        // Reload page to same URL to restart fresh
-        window.location.reload();
+        // Reload with full URL params to ensure auto-start works
+        if (urlToRetry) {
+            const newUrl = `/job/${jobId}?url=${encodeURIComponent(urlToRetry)}&audience=${audienceToRetry}&depth=${depthToRetry}`;
+            console.log("[JobPage] Retry: Redirecting to:", newUrl);
+            window.location.href = newUrl;
+        } else {
+            // Fallback if somehow we have no URL (shouldn't happen)
+            console.warn("[JobPage] Retry: No URL available, falling back to reload");
+            window.location.reload();
+        }
     };
 
 
