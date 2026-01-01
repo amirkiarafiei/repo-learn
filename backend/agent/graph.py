@@ -143,7 +143,16 @@ write_file(f"{tutorial_path}/0_overview.md", content)
 - `get_tutorial_path(url, audience)`: Get VIRTUAL path for writing tutorials (MUST call before write_file)
 - `ls`, `read_file`: Read files from repository (use the virtual repo path)
 - `write_file`: Write tutorial files (ONLY to tutorial_path)
-- `complete_tutorial`: Mark the tutorial as complete (MUST call before finishing)
+## Handling "Continue" Messages
+
+If you receive a message saying "Continue with the planning and doing the tasks":
+1. Call `read_todos` to check your current progress.
+2. Review what you've already completed (check which files exist).
+3. Complete any remaining pending or in_progress tasks.
+4. When ALL work is done, call `complete_tutorial(github_url, audience, summary)`.
+5. Do NOT repeat work you've already done.
+
+- Call `complete_tutorial`: Mark the tutorial as complete (MUST call before finishing)
 
 ## 🏁 How to Finish
 1. Write all tutorial files

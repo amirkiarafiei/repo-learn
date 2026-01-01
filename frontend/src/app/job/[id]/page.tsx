@@ -16,7 +16,7 @@ function JobPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const jobId = params.id as string;
-    const { activeJob, completeJob, clearJob } = useJob();
+    const { activeJob, completeJob, clearJob, updateJob } = useJob();
     const { addToast } = useToast();
 
     // Dialog states
@@ -223,6 +223,30 @@ function JobPageContent() {
         }
     };
 
+    // Handle Continue
+    const handleContinue = async () => {
+        if (!threadId || isReadonly) return;
+
+        const currentCount = activeJob?.continuationCount || 0;
+        if (currentCount >= 2) {
+            addToast("Maximum continuations reached. Please use Retry.", "error");
+            return;
+        }
+
+        // Increment locally and update context
+        const newCount = currentCount + 1;
+        updateJob({ continuationCount: newCount });
+
+        try {
+            // Trigger a new run on the SAME thread
+            await liveAgent.start(jobId, resolvedRepoId || "", audience, depth, activeJob?.githubUrl || githubUrl || "", true);
+            addToast(`Continuing analysis (Attempt ${newCount}/2)...`, "info");
+        } catch (err) {
+            console.error("Failed to continue analysis:", err);
+            addToast("Failed to continue analysis. Try again.", "error");
+        }
+    };
+
 
     // ========================================
     // FIX: Improved redirect logic with retry verification
@@ -298,6 +322,16 @@ function JobPageContent() {
                     : hasStartedRef.current || isResuming
                         ? "processing"
                         : "idle";
+
+    // Detect if we should show the Continue button
+    // 1. Run is terminal (success/error from LangGraph)
+    // 2. Status is NOT completed in metadata
+    // 3. Under the limit
+    const canContinue = !isReadonly &&
+        (agentStatus === "idle" || agentStatus === "error") &&
+        !isComplete &&
+        (activeJob?.continuationCount || 0) < 2 &&
+        hasStartedRef.current;
 
     return (
         <main className="h-screen flex flex-col relative">
@@ -421,6 +455,21 @@ function JobPageContent() {
                                 </Link>
                             );
                         })()}
+
+                        {/* Continue Button */}
+                        {canContinue && (
+                            <button
+                                onClick={handleContinue}
+                                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Continue with tasks
+                                <span className="text-[10px] text-zinc-500">({activeJob?.continuationCount || 0}/2)</span>
+                            </button>
+                        )}
 
                         {/* Control Buttons (Stop/Retry) - Only in active mode */}
                         {!isReadonly && (
