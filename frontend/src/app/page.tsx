@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useToast } from "@/components/Toast";
+import { useJob } from "@/context/JobContext";
 
 interface TutorialEntry {
   id: string;
@@ -31,6 +32,7 @@ export default function Home() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
+  const { activeJob } = useJob();
 
   const fetchStorage = async () => {
     try {
@@ -209,6 +211,40 @@ export default function Home() {
                 </div>
                 <span className="text-sm font-medium text-zinc-400 group-hover:text-blue-300 transition-colors">Add Repository</span>
               </Link>
+
+              {/* Active Generating Job Card */}
+              {activeJob && activeJob.status === "generating" && (
+                <Link
+                  href={`/job/${activeJob.id}`}
+                  className="relative group rounded-xl border border-blue-500/30 bg-blue-900/10 p-5 transition-all hover:border-blue-500/50 overflow-hidden cursor-pointer"
+                >
+                  {/* Orbiting spinner effect */}
+                  <div className="absolute top-0 right-0 p-3 opacity-50">
+                    <div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+                  </div>
+
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h4 className="font-semibold text-blue-100 truncate pr-8">
+                        {formatName(activeJob.repoId)}
+                      </h4>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                          Generating...
+                        </span>
+                        <span className="text-[10px] uppercase tracking-wider text-blue-300/70 font-medium">
+                          {activeJob.audience === "user" ? "User" : "Dev"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 text-xs text-blue-300/50">
+                    Click to view progress →
+                  </div>
+                </Link>
+              )}
 
               {storage.tutorials.map((tutorial) => (
                 <div

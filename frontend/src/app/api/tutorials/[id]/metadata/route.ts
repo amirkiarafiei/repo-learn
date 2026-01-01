@@ -55,8 +55,17 @@ export async function POST(
         // Other things (like stars) go to root
 
         let targetDir = path.join(TUTORIALS_DIR, id);
-        if (audience && (dataToSave.threadId !== undefined)) {
+
+        // Fix: Check for status as well, so "generating" status goes to the correct folder
+        const isAudienceSpecific = dataToSave.threadId !== undefined || dataToSave.status !== undefined;
+
+        console.log(`[API Metadata] POST id=${id} audience=${audience}`, { isAudienceSpecific, keys: Object.keys(dataToSave) });
+
+        if (audience && isAudienceSpecific) {
             targetDir = path.join(targetDir, audience);
+            console.log(`[API Metadata] Targeting audience folder: ${targetDir}`);
+        } else {
+            console.log(`[API Metadata] Targeting root folder: ${targetDir}`);
         }
 
         const metadataPath = path.join(targetDir, "metadata.json");

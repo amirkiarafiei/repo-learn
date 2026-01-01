@@ -3,17 +3,25 @@
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useAgentStream } from "@/hooks/useAgentStream";
+import { usePersistentAgent } from "@/hooks/usePersistentAgent";
 import { useThreadHistory } from "@/hooks/useThreadHistory";
 import { PlannerPanel } from "@/components/PlannerPanel";
 import { BrainPanel } from "@/components/BrainPanel";
 import { GridPanel } from "@/components/GridPanel";
+import { useJob } from "@/context/JobContext";
+import { useToast } from "@/components/Toast";
 
 function JobPageContent() {
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
     const jobId = params.id as string;
+    const { activeJob, completeJob, clearJob } = useJob();
+    const { addToast } = useToast();
+
+    // Dialog states
+    const [showStopConfirm, setShowStopConfirm] = useState(false);
+    const [showRetryConfirm, setShowRetryConfirm] = useState(false);
 
     // Get mode and params from query
     const githubUrl = searchParams.get("url");
@@ -39,24 +47,33 @@ function JobPageContent() {
     const [isComplete, setIsComplete] = useState(false);
 
     // Use different hooks based on mode
-    // NOTE: For NEW analyses (live mode), we do NOT pass initialThreadId.
-    // LangGraph will create a new thread and return the ID via onThreadId callback.
-    // For READONLY mode, we use useThreadHistory which fetches existing thread state.
-    const liveStream = useAgentStream({
-        onComplete: () => setIsComplete(true),
-    });
+    const isResuming = !isReadonly && activeJob?.id === jobId;
+
+    const liveAgent = usePersistentAgent();
+    // Monitor completion from live agent
+    useEffect(() => {
+        if (!isReadonly && liveAgent.status === "completed" && !isComplete) {
+            setIsComplete(true);
+            completeJob();
+            addToast("Tutorial generation complete!", "success");
+        }
+    }, [isReadonly, liveAgent.status, isComplete, completeJob, addToast]);
+
 
     const historyStream = useThreadHistory(isReadonly ? jobId : null);
 
     // Pick the right data source
-    const messages = isReadonly ? historyStream.messages : liveStream.messages;
-    const todos = isReadonly ? historyStream.todos : liveStream.todos;
-    const subagents = isReadonly ? historyStream.subagents : liveStream.subagents;
-    const isLoading = isReadonly ? historyStream.isLoading : liveStream.isLoading;
+    const messages = isReadonly ? historyStream.messages : liveAgent.messages;
+    const todos = isReadonly ? historyStream.todos : liveAgent.todos;
+    const subagents = isReadonly ? historyStream.subagents : liveAgent.subagents;
+    const isLoading = isReadonly ? historyStream.isLoading : liveAgent.isLoading;
+    // Error handling: checking both Error object and string possibilities securely
     const error: Error | null = isReadonly
         ? historyStream.error
-        : (liveStream.error instanceof Error ? liveStream.error : liveStream.error ? new Error(String(liveStream.error)) : null);
-    const threadId = isReadonly ? jobId : liveStream.threadId;
+        : (liveAgent.error instanceof Error ? liveAgent.error : liveAgent.error ? new Error(String(liveAgent.error)) : null);
+
+    // Thread ID source
+    const threadId = isReadonly ? jobId : activeJob?.threadId;
 
     // Save thread ID and audience when job completes (for future dashboard access)
     const saveThreadMetadata = useCallback(async (repoId: string, tid: string, aud: "user" | "dev") => {
@@ -87,7 +104,7 @@ function JobPageContent() {
     }, []);
 
     // Auto-start analysis when page loads with a URL (live mode only)
-    const { submitAnalysis, isLoading: streamLoading } = liveStream;
+    const { start, stop, status: agentStatus } = liveAgent;
 
     // ========================================
     // FIX: Use ref-based guard to prevent double execution
@@ -95,23 +112,71 @@ function JobPageContent() {
     useEffect(() => {
         if (isReadonly || !githubUrl || isComplete) return;
 
+        // If we represent the active job, do not restart
+        if (activeJob?.id === jobId) {
+            console.log("[JobPage] Connected to active job:", jobId);
+            return;
+        }
+
         // Synchronous guard using ref - prevents race condition
-        if (!hasStartedRef.current && !streamLoading) {
+        // Also check if we are already running (agentStatus)
+        if (!hasStartedRef.current && agentStatus === "idle") {
             hasStartedRef.current = true;
 
             // Pre-create tutorial directory before starting analysis
             const startAnalysis = async () => {
                 const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+                let repoId = "unknown_repo";
                 if (match) {
-                    const repoId = `${match[1]}_${match[2]}`.toLowerCase().replace(/\.git$/, "");
+                    repoId = `${match[1]}_${match[2]}`.toLowerCase().replace(/\.git$/, "");
                     await ensureTutorialDir(repoId, audience);
                 }
+
                 console.log("[JobPage] Starting analysis for:", githubUrl, "depth:", depth);
-                submitAnalysis(githubUrl, audience, depth);
+
+                start(jobId, repoId, audience, depth);
             };
             startAnalysis();
         }
-    }, [isReadonly, githubUrl, streamLoading, submitAnalysis, audience, depth, isComplete, ensureTutorialDir]);
+    }, [isReadonly, githubUrl, agentStatus, start, audience, depth, isComplete, ensureTutorialDir, activeJob, jobId]);
+
+
+
+    // Handle Stop
+    const handleStop = async () => {
+        setShowStopConfirm(false);
+        stop(); // Calls stream.stop() and clearJob() internally in our modified hook
+        // But let's be explicit with context
+        clearJob();
+        router.push("/");
+    };
+
+    // Handle Retry
+    const handleRetry = async () => {
+        setShowRetryConfirm(false);
+        stop();
+        clearJob();
+
+        // Cleanup existing tutorial content
+        if (githubUrl) {
+            const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+            if (match) {
+                const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase();
+                try {
+                    console.log("[JobPage] Cleaning up tutorial for retry:", repoId);
+                    await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`, {
+                        method: "DELETE"
+                    });
+                } catch (e) {
+                    console.error("Failed to cleanup tutorial:", e);
+                }
+            }
+        }
+
+        // Reload page to same URL to restart fresh
+        window.location.reload();
+    };
+
 
     // ========================================
     // FIX: Improved redirect logic with retry verification
@@ -120,7 +185,7 @@ function JobPageContent() {
         // Don't redirect if there's an error or already attempted
         if (error || redirectAttemptedRef.current) return;
 
-        if (isComplete && githubUrl && liveStream.threadId) {
+        if (isComplete && githubUrl && threadId) {
             // Mark as attempted to prevent duplicate redirects
             redirectAttemptedRef.current = true;
 
@@ -132,10 +197,15 @@ function JobPageContent() {
                     const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase();
                     console.log("[JobPage] Verifying tutorial exists for:", repoId);
 
+                    // Save metadata WITH threadId immediately to ensure it's available
+                    console.log("[JobPage] Saving thread metadata:", { repoId, threadId, audience });
+                    await saveThreadMetadata(repoId, threadId!, audience);
+
                     // Retry logic: filesystem may have delay
+                    // Increased to 10 attempts * 1s = 10s max wait
                     let verified = false;
-                    for (let attempt = 0; attempt < 3; attempt++) {
-                        await new Promise(r => setTimeout(r, 500 * (attempt + 1))); // 500ms, 1s, 1.5s
+                    for (let attempt = 0; attempt < 10; attempt++) {
+                        await new Promise(r => setTimeout(r, 1000));
 
                         try {
                             const res = await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`);
@@ -158,9 +228,6 @@ function JobPageContent() {
                         return;
                     }
 
-                    // Save metadata WITH threadId (only after verification)
-                    await saveThreadMetadata(repoId, liveStream.threadId!, audience);
-
                     // Redirect to tutorial
                     if (!isReadonly) {
                         console.log("[JobPage] Redirecting to tutorial...");
@@ -170,7 +237,7 @@ function JobPageContent() {
             };
             checkAndRedirect();
         }
-    }, [isComplete, githubUrl, liveStream.threadId, audience, saveThreadMetadata, isReadonly, router, error]);
+    }, [isComplete, githubUrl, threadId, audience, saveThreadMetadata, isReadonly, router, error]);
 
     // Calculate status
     const status = isReadonly
@@ -181,72 +248,119 @@ function JobPageContent() {
                 ? "analyzing"
                 : error
                     ? "error"
-                    : hasStartedRef.current
+                    : hasStartedRef.current || isResuming
                         ? "processing"
                         : "idle";
 
     return (
-        <main className="h-screen flex flex-col">
+        <main className="h-screen flex flex-col relative">
+            {/* Stop Confirmation Dialog */}
+            {showStopConfirm && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+                        <h3 className="text-lg font-bold text-white mb-2">Stop Generation?</h3>
+                        <p className="text-zinc-400 mb-6">
+                            Current progress will be lost. You will be returned to the home page.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowStopConfirm(false)}
+                                className="px-4 py-2 rounded-lg border border-zinc-700 hover:bg-zinc-800 text-zinc-300 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleStop}
+                                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium transition-colors"
+                            >
+                                Stop Generation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Retry Confirmation Dialog */}
+            {showRetryConfirm && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+                        <h3 className="text-lg font-bold text-white mb-2">Restart Generation?</h3>
+                        <p className="text-zinc-400 mb-6">
+                            Current progress will be lost and the analysis will start over from the beginning.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowRetryConfirm(false)}
+                                className="px-4 py-2 rounded-lg border border-zinc-700 hover:bg-zinc-800 text-zinc-300 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleRetry}
+                                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors"
+                            >
+                                Restart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <header className="border-b border-zinc-800 px-6 py-4 flex-shrink-0">
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-4">
-                        {/* Back button for readonly mode */}
-                        {isReadonly && tutorialId && (
-                            <Link
-                                href={`/tutorial/${encodeURIComponent(tutorialId || "")}?audience=${audience}`}
-                                className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                                <span className="text-sm">Back to Tutorial</span>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4">
+                            {/* Back button for readonly mode */}
+                            {isReadonly && tutorialId && (
+                                <Link
+                                    href={`/tutorial/${encodeURIComponent(tutorialId || "")}?audience=${audience}`}
+                                    className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    <span className="text-sm">Back to Tutorial</span>
+                                </Link>
+                            )}
+                            {isReadonly && tutorialId && <div className="h-5 w-px bg-zinc-700" />}
+
+                            <Link href="/" className="text-xl font-semibold tracking-tight">
+                                <span className="text-blue-600">Repo</span>Learn
                             </Link>
-                        )}
-                        {isReadonly && tutorialId && <div className="h-5 w-px bg-zinc-700" />}
-
-                        <Link href="/" className="text-xl font-semibold tracking-tight">
-                            <span className="text-blue-600">Repo</span>Learn
-                        </Link>
-                    </div>
-
-                    <div className="h-5 w-px bg-zinc-800" />
-
-                    <div className="flex items-center gap-4">
-                        {/* Status badge */}
-                        <div className="flex items-center gap-2 text-sm text-zinc-400 font-medium">
-                            {status === "history" && (
-                                <div className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-                                    <span className="text-purple-400">History View</span>
-                                </div>
-                            )}
-                            {(status === "analyzing" || status === "processing") && (
-                                <div className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></span>
-                                    <span className="text-yellow-400 font-mono">Analyzing...</span>
-                                </div>
-                            )}
-                            {status === "complete" && (
-                                <div className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                                    <span className="text-emerald-400">Complete</span>
-                                </div>
-                            )}
-                            {status === "error" && (
-                                <div className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                                    <span className="text-red-400">Error</span>
-                                </div>
-                            )}
-                            {status === "idle" && (
-                                <div className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full"></span>
-                                    <span>Ready</span>
-                                </div>
-                            )}
                         </div>
 
+                        {!isReadonly && <div className="h-5 w-px bg-zinc-800" />}
+
+                        {!isReadonly && (
+                            <div className="flex items-center gap-4">
+                                {/* Status badge */}
+                                <div className="flex items-center gap-2 text-sm text-zinc-400 font-medium">
+                                    {(status === "analyzing" || status === "processing") && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></span>
+                                            <span className="text-yellow-400 font-mono">Analyzing...</span>
+                                        </div>
+                                    )}
+                                    {status === "complete" && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                            <span className="text-emerald-400">Complete</span>
+                                        </div>
+                                    )}
+                                    {status === "error" && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                                            <span className="text-red-400">Error</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right Side Controls */}
+                    <div className="flex items-center gap-3">
                         {/* View Tutorial button (when complete, live mode only) */}
                         {!isReadonly && isComplete && githubUrl && (() => {
                             const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
@@ -254,12 +368,41 @@ function JobPageContent() {
                             return (
                                 <Link
                                     href={`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors"
+                                    className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                                 >
                                     View Tutorial →
                                 </Link>
                             );
                         })()}
+
+                        {/* Control Buttons (Stop/Retry) - Only in active mode */}
+                        {!isReadonly && (
+                            <>
+                                {/* Retry Button - Always visible */}
+                                <button
+                                    onClick={() => setShowRetryConfirm(true)}
+                                    className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
+                                    title="Restart Analysis"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </button>
+
+                                {/* Stop Button - Visible when running */}
+                                {!isComplete && !error && (
+                                    <button
+                                        onClick={() => setShowStopConfirm(true)}
+                                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-400 hover:text-red-300 border border-red-900/50 hover:bg-red-900/20 rounded-lg transition-all"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        Stop
+                                    </button>
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
@@ -270,8 +413,6 @@ function JobPageContent() {
                     Error: {(error as Error)?.message || String(error)}
                 </div>
             )}
-
-
 
             {/* 3-Panel Layout */}
             <div className="flex-1 grid grid-cols-12 min-h-0">
