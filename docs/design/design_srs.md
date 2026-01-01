@@ -1,368 +1,142 @@
-# Software Requirements Specification (SRS) for RepoLearn
+# Software Requirements & Technical Reference: RepoLearn
 
-## 1. Introduction
+## 1. Introduction & Core Thesis
 
-### 1.1 Purpose
-The purpose of this document is to define the software requirements for **RepoLearn**, an AI-powered tool designed to generate interactive tutorials and documentation from codebases.
-This tool serves two primary goals:
-1.  **Research**: To demonstrate the effectiveness of "Deep Agents" (agents with planning, sub-agents, and file systems) in understanding large codebases.
-2.  **Engineering**: To provide a high-fidelity, user-friendly interface that visualizes the agent's reasoning process in real-time.
+RepoLearn is an AI-native documentation platform that leverages hierarchical multi-agent systems to analyze source code and generate high-fidelity tutorials.
 
-### 1.2 Scope
-RepoLearn is a web-based application where users can input a GitHub repository URL. The system then employs a hierarchical AI agent to analyze the code and generate a structured set of Markdown tutorials. The system features a "Live Progress" dashboard that visualizes the agent's planning and execution state.
+### 1.1 The Deep Agent Pattern
+The project serves as a research demonstration of the **Deep Agent (Agents 2.0)** methodology. Unlike standard RAG or static multi-agent systems, RepoLearn utilizes:
+- **Dynamic Instantiation**: The system creates specialized sub-agents with bespoke tasks and prompts on the fly, rather than relying on a fixed pool of workers.
+- **Hierarchical Planning**: A centralized "Brain" agent maintains a dynamic TODO list and steers the entire analysis.
+- **Recursive Delegation**: Specialist sub-agents report findings back to the Brain, which can then refine the plan or spawn further agents for deeper investigation.
+- **Sandboxed Execution**: Agents operate within a virtualized filesystem to ensure host safety.
+
+### 1.2 System Purpose
+RepoLearn provides an automated "Explainable AI" experience for codebase onboarding. It emphasizes **transparency**—users don't just see the final tutorial; they see the agent's step-by-step reasoning, tool usage, and collaborative effort between specialists.
+
+---
 
 ## 2. System Architecture
 
-The system follows a flat, service-oriented architecture:
+The project is architected as a decoupled mono-repo designed for local development and high observability.
 
+### 2.1 Component Overview
+1.  **Backend (LangGraph Engine)**: The core intelligence. It runs a LangGraph server that orchestrates the Python-based Deep Agent graph.
+2.  **Frontend (Next.js 15)**: The user interface and "Sidecar" API. It handles the 3-panel visualization, tutorial rendering, and serves as a proxy for the filesystem.
+3.  **Data Layer (Shared Volume)**: A centralized `data/` directory used for caching repository clones and storing generated Markdown content.
+
+### 2.2 Directory Reference
 ```text
 repo-learn/
-├── frontend/               # Next.js 15 + Tailwind v4 Application
-├── backend/                # LangGraph Agent Engine + FastAPI Sidecar
-│   ├── agent/              # DeepAgent logic (graph.py, tools.py, prompts.py)
-│   └── api/                # FastAPI Sidecar (for file operations)
-└── data/                   # Local filesystem storage
-    ├── repositories/       # Cloned repos from GitHub
-    └── tutorials/          # Generated tutorials per repo
-        └── {repo_name}/    # e.g., "langchain-ai_deepagents"
-            ├── user/       # Tutorials for end-users
-            └── dev/        # Tutorials for developers/maintainers
+├── frontend/               # Next.js Application
+│   ├── src/app/            # App Router (Home, New, Job, Tutorial)
+│   ├── src/api/            # Next.js API Routes (Serverless functions)
+│   ├── src/hooks/          # Core logic (Persistence, Streaming, History)
+│   └── src/context/        # Global state (JobContext)
+├── backend/                # Agent Graph
+│   ├── agent/              # Node definitions, tools, and worker logic
+│   └── langgraph.json      # Server configuration
+└── data/                   # Persistent storage volume
+    ├── repositories/       # Cloned source code (Cache)
+    └── tutorials/          # Generated docs & metadata
 ```
-
-### 2.1 Components
-*   **The Frontend (Client)**: A Next.js application responsible for the UI, state management, and connecting to the backend streams.
-*   **The Engine (Agent Runner)**: A `LangGraph Server` instance that executes the Deep Agent logic and streams events (tokens, tool calls, state updates).
-*   **The Sidecar (Utility API)**: A `FastAPI` service that handles non-agentic tasks like file system exploration (for the editor), project listing, and saving user edits.
-*   **The Data Layer**: A shared volume (local directory) where the agent writes markdown files and the frontend reads them.
-
-## 2.2 Data Flow & Streaming
-To ensure robust, real-time updates and sub-agent differentiation, we utilize LangGraph's native streaming capabilities:
-*   **Event Routing**: Events are streamed as tuples `(namespace, data)`.
-    *   **Main Agent**: `namespace=()` (empty).
-    *   **Sub-Agent**: `namespace=('task_tool', 'subagent_name')`.
-*   **Persistence**: For MVP, LangGraph uses in-memory/file-based checkpointing.
-    *   **Persistence (Snapshot Fallback)**: In addition to server-side runs, the system implements **Snapshot-based Persistence**. When a job completes, a serializable snapshot of the thread state (messages, todos, subagent activity) is archived in the tutorial's local `metadata.json`.
-    *   **Reconnection & Failure Recovery**: The frontend uses `usePersistentAgent` for active polling. If the server returns a 404 (e.g., after a server restart), `useThreadHistory` automatically falls back to the local metadata snapshot, ensuring history remains viewable "offline".
-    *   **Production**: For production deployments, LangGraph can use Postgres for persistent state storage.
-
-## 2.3 Error Handling & Resilience
-*   **Retry Logic**: Critical nodes (e.g., `GitClone`, API calls) must implement `retry_policy` (exponential backoff) to handle transient failures.
-*   **Exception Propagation**: Failures in Sub-agents must be caught by the Main Agent to allow for recovery or task skipping, rather than crashing the entire pipeline.
-*   **Testing**: We will use "In-Memory" mode for unit/integration tests to validate graph logic without heavy docker dependencies.
-
-## 3.4 File Management Strategy
-*   **Decoupled Naming**: The agent does not need to decide the final filename immediately.
-    *   *Draft Phase*: Files are created with temporary IDs or logical names.
-    *   *Synthesis Phase*: The Main Agent renames and organizes files into the final `{order}_{title}.md` structure based on the complete context.
-*   **Storage**: Files are written to the shared `data/` volume, accessible by both the Agent (for writing) and the Sidecar (for reading/serving to UI).
-*   **Smart Reference Cleanup**: The system utilizes a reference-counting deletion strategy.
-    *   *Granular Deletion*: Deleting a specific audience version (e.g., "dev") only removes the documentation subfolder.
-    *   *Shared Resource Preservation*: The shared codebase in `repositories/` is ONLY deleted when **all** associated tutorial versions for that repository have been removed.
-
-## 3. Functional Requirements
-
-### 3.1 User Workflow
-1.  **Home Page**:
-    *   User sees a list of existing tutorials (cards).
-    *   User clicks "Add New Repository".
-    *   User inputs a GitHub URL and selects "Target Audience" (User vs. Developer) and "Depth" (Basic vs. Detailed).
-2.  **Generation Phase (Live Progress)**:
-    *   User is redirected to a generic "Job" page.
-    *   The page displays a 3-Panel Layout (see Section 4).
-    *   User watches the agent plan, spawn sub-agents, and complete tasks in real-time.
-3.  **Consumption Phase (Tutorial Viewer)**:
-    *   Upon completion, user sees the generated documentation.
-    *   Sidebar lists modules/files.
-    *   Main area shows rendered Markdown with Mermaid diagrams.
-    *   User can toggle "Edit Mode" to fix errors manually.
-
-### 3.2 The Deep Agent (Backend)
-*   **Core Logic**: Implemented using `langchain-ai/deepagents`.
-*   **Planning**: The agent must maintain a structured `todo` list in its state.
-*   **Sub-agents**: The agent must spawn sub-agents via a `task` tool.
-*   **Events**: The agent must stream:
-    *   `updates`: Changes to the `todo` list.
-    *   `messages`: Main agent log / thought process.
-    *   `custom_events`: Sub-agent specific actions (start, working_on_file, finish).
-
-### 3.3 The Sidecar API (Backend)
-*   `GET /projects`: List all analyzed repositories.
-*   `GET /files/{path}`: Read raw content of a generated file.
-*   `POST /files/{path}`: Save changes to a file (User edit).
-
-## 4. UI Design Specifications
-
-### 4.1 The 3-Panel Layout (Live Progress)
-This is the core differentiator for the "Demo" track.
-
-| Panel                 | Content                                                                                            | Source Stream                                      |
-| :-------------------- | :------------------------------------------------------------------------------------------------- | :------------------------------------------------- |
-| **Left: Planner**     | A dynamic tree/list of tasks. Items change color based on status (Pending -> In Progress -> Done). | `stream_mode="updates"` (State: `todos`)           |
-| **Center: The Brain** | A terminal-like feed showing the Main Agent's high-level thoughts and tool calls.                  | `stream_mode="messages"`                           |
-| **Right: The Grid**   | A grid of active Sub-agents. Each card shows: Name, Status, Current File.                          | `custom_events` (via WebSocket/SubAgentMiddleware) |
-
-### 4.2 Tutorial Viewer
-*   Clean, "Docs-like" interface (inspired by GitBook or Vercel formatting).
-*   Syntax highlighting for code blocks.
-*   Rendering for Mermaid.js diagrams.
-
-## 5. Non-Functional Requirements
-*   **Latency**: UI updates must feel "live" (Server-Sent Events or WebSockets).
-*   **Persistence**: If the browser is refreshed, the "Job" state must be recoverable (connect to existing thread).
-*   **Aesthetics**: Modern, dark-mode first design using Tailwind CSS. "Premium" feel.
-
-## 6. Development Phases (Engineering Focused)
-
-### Phase 1: Skeleton
-*   Set up repo structure.
-*   Initialize Next.js app.
-*   Initialize LangGraph Server configuration.
-*   Establish "Hello World" streaming connection (Frontend -> Agent).
-
-### Phase 2: The Deep Agent
-*   Implement `DeepAgent` in Python.
-*   Implement `TodoListMiddleware` and verify it streams updates.
-*   Implement `SubAgentMiddleware` mock (just standard tool calls first).
-
-### Phase 3: The 3-Panel UI
-*   Build the React components for Plan, Log, and Grid.
-*   Connect React state to the LangGraph stream.
-
-### Phase 4: File Generation & Viewing
-*   Implement `FilesystemMiddleware` for the agent.
-*   Implement the Sidecar API for reading files.
-*   Build the Markdown Viewer/Editor in Next.js.
-
-## 7. Future Scope & Optional Enhancements
-
-### 7.1 Advanced UI Visualizations
-*   **Semantic Status Updates**: For the Sub-agent Grid, replace raw tool call expressions with human-readable signatures (e.g., "Scanning `src/auth`..." instead of `read_file('src/auth/...')`).
-*   **Conversational Center Panel**: Evolve the center log into a "Chat Interface" that visualizes the internal dialogue between the Main Agent and its Sub-agents as a conversation thread, making the delegation process feel like a team discussion.
-
-### 7.2 Architecture Extensions
-*   **The "Manager" Layer**: A Supervisor Agent (standard ReAct) that sits above the Deep Agent.
-    *   *Role*: Quality Assurance. It monitors the Deep Agent's output against the original requirements.
-    *   *Action*: If the Deep Agent stops too early or produces shallow content, the Manager intervenes and issues corrective prompts.
-    *   *UI Impact*: The visualization would expand to show a "Conversation Pool" between Manager, Deep Agent, and Sub-agents.
-
-### 7.3 Operational Features
-*   **Cost Estimation & Transparency**:
-    *   **Pre-Flight Check**: Before starting, calculate an estimated cost based on repository token count (using `tiktoken`) and selected model pricing.
-    *   **Live Metrics**: Display real-time token usage and accrued cost in the "Live Progress" dashboard.
-    *   **Configuration**: Allow users to configure model selection (UI/env) and manually input their API cost-per-million tokens for accurate estimation.
-*   **Resumability & Fault Tolerance**:
-    *   **Checkpointing**: If the process is halted (user cancellation or error), the system should detect existing progress (generated markdown files, completed TODOs) upon restart.
-    *   **Recovery**: The agent should skip already-completed phases or files rather than restarting from scratch.
 
 ---
 
-## 8. Implementation Notes (MVP Status)
+## 3. Backend Implementation (The Deep Agent)
 
-This section documents how the SRS requirements were realized in the MVP.
+The agent logic is implemented in `backend/agent/graph.py` using the `deepagents` framework.
 
-### 8.1 Requirements Traceability Matrix
+### 3.1 The Agent Graph
+The graph is a recursive state machine implementing the Deep Agent pattern:
+- **Brain Node**: The Architect orchestrator. It parses the GitHub URL, creates a plan, and manages the lifecycle of worker agents.
+- **Deep Delegation Tool**: A specialized tool that performs **Dynamic Instantiation** of sub-agents. It takes a description of the task and a target agent type, generating a tailored prompt for the worker.
+- **Worker Sub-agents**:
+    - `code-analyzer`: Ephemeral specialist for technical parsing.
+    - `doc-writer`: Ephemeral specialist for content synthesis.
 
-| Requirement                | Status     | Implementation                                    |
-| -------------------------- | ---------- | ------------------------------------------------- |
-| **3.1 User Workflow**      | ✅ Complete | Home → New → Job → Tutorial pages                 |
-| **3.2 Deep Agent**         | ✅ Complete | `graph.py` with BRAIN_PROMPT                      |
-| **3.2 TodoListMiddleware** | ✅ Complete | Built into DeepAgents                             |
-| **3.2 SubAgentMiddleware** | ✅ Complete | `subagents.py` definitions                        |
-| **3.2 Event Streaming**    | ✅ Complete | `useAgentStream.ts` hook                          |
-| **3.3 Sidecar API**        | ✅ Complete | API routes in Next.js (tutorials, storage, repos) |
-| **4.1 3-Panel Layout**     | ✅ Complete | PlannerPanel, BrainPanel, GridPanel               |
-| **4.2 Tutorial Viewer**    | ✅ Complete | Interactive Learning IDE with tabs                |
-| **5 Non-Functional**       | ✅ Complete | SSE streaming, thread persistence, dark theme     |
-| **7.1 Advanced UI**        | ⚠️ Partial  | IDE implemented, semantic updates deferred        |
-| **7.2 Manager Layer**      | ⏳ Deferred | Supervisor agent                                  |
-| **7.3 Cost Estimation**    | ⏳ Deferred | Token counting, live metrics                      |
-| **7.3 Resumability**       | ✅ Complete | Detached server runs (v0.3.1)                     |
-
-### 8.2 Architecture Deviation: Sidecar vs API Routes
-
-The original SRS specified a separate FastAPI sidecar. In the MVP, we use **Next.js API Routes** instead:
-
-**Rationale:**
-- Simpler deployment (single frontend process)
-- No CORS configuration needed
-- Faster development iteration
-
-**Implemented Routes:**
-```
-/api/tutorials              GET    List all tutorials
-/api/tutorials/[id]         GET    Get tutorial content
-/api/tutorials/[id]/export  GET    Export as zip (markdown/pdf)
-/api/tutorials/[id]/metadata GET/POST  Thread metadata
-/api/storage                GET    Storage stats
-/api/storage                DELETE Delete tutorial/cache
-/api/repositories/[id]/files GET    List repo files
-/api/repositories/[id]/file  GET    Get file content
-```
-
-### 8.3 Streaming Implementation Details
-
-The `useAgentStream` hook wraps `@langchain/langgraph-sdk/react`:
-
-```typescript
-interface UseAgentStreamReturn {
-  // From LangGraph SDK
-  messages: AgentMessage[];
-  isLoading: boolean;
-  error: Error | null;
-  submit: (input: string) => void;
-  stop: () => void;
-  
-  // Custom additions
-  todos: Todo[];
-  subagents: SubagentStatus[];
-  threadId: string;
-}
-```
-
-### 8.4 State Interfaces
-
-```typescript
-// Todo item from TodoListMiddleware
-interface Todo {
-  content: string;
-  status: "pending" | "in_progress" | "completed";
-}
-
-// Subagent tracking (derived from task tool calls)
-interface SubagentStatus {
-  name: string;
-  status: "working" | "done" | "error";
-  currentTask: string;
-  startedAt: Date;
-  completedAt?: Date;
-  activityLogs: string[];
-}
-```
-
-### 8.5 Premium UI Implementation
-
-The CSS system provides:
-
-| Class               | Effect                              |
-| ------------------- | ----------------------------------- |
-| `.glass`            | Glassmorphism (blur + transparency) |
-| `.skeleton`         | Shimmer loading animation           |
-| `.hover-lift`       | Lift on hover with shadow           |
-| `.gradient-text`    | Blue-purple gradient text           |
-| `.stagger-children` | Cascading fade-in animation         |
-| `.animate-fade-in`  | Simple fade-in                      |
-| `.typing-cursor`    | Blinking cursor effect              |
-
-### 8.6 Data Storage Structure
-
-```
-data/
-├── repositories/                # Git clones (cache)
-│   ├── unjs_destr/
-│   ├── sindresorhus_is/
-│   └── ...
-└── tutorials/                   # Generated content
-    ├── unjs_destr/
-    │   └── user/
-    │       └── 0_overview.md
-    ├── sindresorhus_is/
-    │   └── user/
-    │       └── 0_overview.md
-    └── ...
-```
-
-### 8.7 Environment Configuration
-
-**Backend (`backend/.env`):**
-```env
-OPENROUTER_API_KEY=sk-or-v1-...
-```
-
-**Frontend (`frontend/.env.local`):**
-```env
-NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
-```
-
-### 8.8 Known Limitations
-
-1. **No User Authentication**: All tutorials are public/local
-2. **No Rate Limiting**: API routes are unprotected
-3. **In-Memory Checkpoints**: LangGraph dev mode only
-4. **Single Model**: No model selection UI
-5. **No Edit Mode**: Tutorial viewer is read-only
-
-### 8.9 v0.2.0 New Features
-
-| Feature                      | Description                       | Component                      |
-| ---------------------------- | --------------------------------- | ------------------------------ |
-| Interactive Learning IDE     | Tab-based file viewer with search | `TabBar.tsx`, `CodeViewer.tsx` |
-| Smart Contextual References  | Clickable code links in docs      | Custom Markdown renderer       |
-| Agent Visualization Playback | Readonly thread history view      | `useThreadHistory.ts`          |
-| Tutorial Export              | Download as Markdown/PDF zip      | `/api/tutorials/[id]/export`   |
-| Inline Sidebar Toggle        | Compact sidebar header            | `page.tsx` (tutorial)          |
-
-### 8.10 v0.2.1 Robustness Improvements (Hotfix)
-
-| Improvement              | Problem Addressed              | Implementation                  |
-| ------------------------ | ------------------------------ | ------------------------------- |
-| **Smart Redirect Guard** | Redirect loops/404s on failure | Async check in `JobPage.tsx`    |
-| **Case-Insensitive API** | Linux filesystem mismatches    | Logic in `route.ts`, `tools.py` |
-| **State Persistence**    | Losing `audience` context      | Query param propagation         |
-
-### 8.11 v0.3.0 Pre-Release Stabilization
-
-| Improvement                | Problem Addressed            | Implementation                    |
-| -------------------------- | ---------------------------- | --------------------------------- |
-| **Smart Depth Selection**  | One-size-fits-all generation | Basic/Detailed toggle in UI + LLM |
-| **Granular Storage**       | Wasting disk space           | "Delete Code" vs "Delete All"     |
-| **Universal Lowercase**    | Case-sensitivity 404 errors  | Unified lowercasing for all IDs   |
-| **Speed Mode Prompts**     | Slow development testing     | Brief response mode for agents    |
-| **README & Env Templates** | Difficult onboarding         | Root README & .env.example files  |
-
-### 8.12 v0.4.0 Detached Persistence & Robust Cleanup
-
-| Improvement                | Problem Addressed             | Implementation                       |
-| -------------------------- | ----------------------------- | ------------------------------------ |
-| **Detached Persistence**   | UI connection loss kills job  | `usePersistentAgent` (runs create)   |
-| **Context-Aware Resuming** | 404s/Redirect failure on back | Fallback to `activeJob` for metadata |
-| **Atomic Deep Cleanup**    | Zombie data on restart        | DELETE removes tutorial AND repo     |
-| **Metadata Resilience**    | Missing Visualization link    | Saved immediately on job finish      |
-| **One Job = One Thread**   | State pollution/leakage       | UUID isolation for every attempt     |
-
-### 8.13 v0.5.0 Snapshot Persistence & Smart Cleanup
-
-| Improvement            | Problem Addressed               | Implementation                          |
-| ---------------------- | ------------------------------- | --------------------------------------- |
-| **Snapshot Fallback**  | History loss on server restart  | Local JSON archiving in `metadata.json` |
-| **Smart Delete Logic** | Shared repo deletion conflicts  | Reference-counted `DELETE` handlers     |
-| **Indicator Badges**   | History source confusion        | `[Live History]` vs `Cached Snapshot`   |
-| **UI Simplification**  | Dangerous/Confusing cache tools | Removed explicit "Delete Code" button   |
-| **Unified Cleanup**    | Zombie data on Stop/Retry       | Smart cleanup helper in `JobPage`       |
+### 3.2 Path Safety & Sandboxing
+RepoLearn uses `CompositeBackend` to enforce strict security boundaries for the agent:
+- **Default (Read-Only)**: Points to `data/repositories/`. Agents can read code but cannot modify it.
+- **Tutorials Route (Read-Write)**: Points to `data/tutorials/`. Agents can only write files within this specific context.
+- **Virtual Mode**: All paths are virtualized to prevent `../` path traversal attacks.
 
 ---
 
-## 9. Acceptance Criteria Validation
+## 4. Streaming & Persistence Logic
 
-### 9.1 Functional Acceptance
+### 4.1 Detached Run Execution
+To ensure jobs survive browser refreshes or accidental closings:
+1.  Frontend uses `client.runs.create()` to start a "Detached Run" on the server.
+2.  The job is assigned a unique `thread_id` and `run_id`.
+3.  The server continues executing the agent graph even if the client disconnects.
 
-| Criteria                          | Validation                           |
-| --------------------------------- | ------------------------------------ |
-| User can input GitHub URL         | ✅ `/new` page with form              |
-| User can select audience          | ✅ User/Developer toggle              |
-| User can see live progress        | ✅ 3-panel layout with streaming      |
-| User can view generated tutorials | ✅ Tutorial viewer with sidebar       |
-| Tutorials are persisted           | ✅ Markdown files in `data/tutorials` |
+### 4.2 Snapshot Persistence
+On job completion, the system performs an **Automated History Archive**:
+- The final state (messages, plan, and subagent cards) is serialized.
+- This "Snapshot" is saved into the tutorial's `metadata.json`.
+- **Benefit**: Reasoning history is preserved even after the LangGraph thread is purged or the server is restarted.
 
-### 9.2 Non-Functional Acceptance
-
-| Criteria                | Validation                 |
-| ----------------------- | -------------------------- |
-| Real-time updates       | ✅ SSE via LangGraph SDK    |
-| Reconnection on refresh | ✅ Thread ID in URL         |
-| Premium dark theme      | ✅ Tailwind + glassmorphism |
-| Responsive layout       | ✅ Grid-based panels        |
+### 4.3 Hybrid State Hydration
+The `usePersistentAgent` and `useThreadHistory` hooks implement a fail-safe loading strategy:
+- **Primary**: Attempt to fetch live state from the LangGraph server.
+- **Secondary (Fallback)**: If the server returns a 404, the UI automatically detects the local snapshot in `metadata.json` and hydrates the visualization from disk.
 
 ---
 
-*Document updated: January 1, 2026 (v0.5.0)*
+## 5. API Design & Sidecar Reference
 
+The frontend API routes (`frontend/src/app/api/...`) act as the system's "operating system", managing files and background tasks.
+
+### 5.1 Storage Management (`/api/storage`)
+- **GET**: Aggregates disk usage stats and lists all generated tutorials.
+- **DELETE**: Implements **Smart Reference Cleanup**.
+    - It checks if other audience versions (User vs. Dev) exist for a repository.
+    - It preserves the `repositories/` cache as long as at least one version remains.
+    - It nukes the shared cache ONLY when the last associated tutorial is deleted.
+
+### 5.2 Metadata API (`/api/tutorials/[id]/metadata`)
+- **POST**: Synchronizes job state (thread IDs, completion status, snapshots) between the UI and the filesystem.
+- This is the source of truth for the dashboard's "View Analysis" links.
+
+---
+
+## 6. Frontend Components & UX
+
+### 6.1 The 3-Panel Job Dashboard
+Located at `/job/[id]`, this dashboard is the heart of the visualization engine.
+- **Planner (Left)**: Renders the `todos` array from the graph state. Uses smooth progress bars and status icons.
+- **Brain (Center)**: A terminal-styled feed. It filters raw LangGraph messages to show only the Main Agent's high-level reasoning.
+- **Grid (Right)**: Visualizes the `task()` tool calls. Each card represents a sub-agent's "workspace" and completion status.
+
+### 6.2 Interactive IDE & Contextual Linking
+The tutorial viewer (`/tutorial/[id]`) features an "Interactive Learning" mode:
+- **TabBar**: Manages multiple open code files.
+- **Contextual Interceptor**: A custom Markdown renderer that listens for links to local files (e.g., `[Auth Logic](src/auth/index.ts)`).
+- **Execution**: Clicking a link in the doc triggers a `window.dispatchEvent` that the IDE captures to fuzzy-search and open the referenced file.
+
+---
+
+## 7. Development & Environment
+
+### 7.1 Key Environment Variables
+- `OPENROUTER_API_KEY`: Required for LLM access.
+- `NEXT_PUBLIC_LANGGRAPH_URL`: Defaults to `http://localhost:2024`.
+- `OPENROUTER_MODEL`: Defaults to `google/gemini-2.0-flash-001`.
+
+### 7.2 Safety Check: Case Sensitivity
+The system enforces **Universal Lowercase Mapping**. All repository IDs and folders are transformed to lowercase (`owner_repo`). This prevents 404 errors on case-sensitive filesystems like Linux when GitHub URLs vary in casing.
+
+---
+
+## 8. Summary of Deletion & Cleanup Triggers
+
+| Action               | Logic                       | Side-Effect                                                       |
+| :------------------- | :-------------------------- | :---------------------------------------------------------------- |
+| **Dashboard Delete** | Smart Cleanup (Ref-counted) | Deletes version; deletes repo ONLY if it's the last one.          |
+| **Stop Generation**  | Smart Cleanup (Ref-counted) | Removes partial data for that audience; preserves other versions. |
+| **Retry Analysis**   | Smart Cleanup (Ref-counted) | Wipes the current audience folder to ensure a 100% fresh start.   |
+
+---
+
+*This document is the authoritative technical reference for RepoLearn. It is maintained to reflect the current implementation state without specific version or date dependencies.*
