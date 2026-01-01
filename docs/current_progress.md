@@ -1,8 +1,8 @@
 # RepoLearn - Current Progress & Status
 
 **Last Updated:** January 1, 2026
-**Version:** v0.4.0
-**Status:** ✅ Released (v0.4.0) - Stable Background execution
+**Version:** v0.5.0
+**Status:** ✅ Released (v0.5.0) - Snapshot Persistence & Smart Deletion
 
 ---
 
@@ -120,6 +120,13 @@ RepoLearn is a fully functional MVP demonstrating the **Deep Agent methodology**
 - [x] **Deep Metadata Sync**: Fixed race conditions in metadata saving to ensure the Visualization Panel link is always active.
 - [x] **Context-Aware Resumption**: Smart fallback to `activeJob` state for seamless redirection when returning to an active job.
 - [x] **Atomic Deep Clean**: Integrated full physical deletion of tutorial and source repository during Retry/Overwrite.
+
+### Phase 14: Snapshot Persistence & Smart Cleanup ✅ (v0.5.0)
+- [x] **Snapshot Fallback**: Auto-archiving of reasoning history into `metadata.json` on completion.
+- [x] **Hybrid loading**: Visualization panel falls back to local snapshots if the LangGraph server resets (404).
+- [x] **Smart Reference Cleanup**: Reference-counted deletion logic that preserves shared repositories if other tutorial versions still exist.
+- [x] **UI Simplification**: Removed manual "Delete Code" button; cache management is now fully automated and intelligent.
+- [x] **Snapshot Indicator**: UI badge in footer to distinguish between `[Live History]` and `Cached Snapshot`.
 
 
 
@@ -255,6 +262,13 @@ CSS animations create a "wow factor":
 - Glassmorphism for headers and panels
 - Stagger animations for list items
 - Toast notifications for user feedback
+- [x] **Snapshot Archiving**: Reasoning state (Plan + Brain + Worker logs) serialized to JSON for air-gapped viewing.
+
+### 6. Smart Reference Cleanup
+To prevent breaking shared dependencies:
+- Deleting one audience (e.g., "dev") only removes the `tutorials/[id]/dev` folder.
+- Source code in `repositories/[id]` is only deleted if NO audience folders (`user/` or `dev/`) remain.
+- This ensures that generating a new "user" version doesn't accidentally wipe the codebase needed by an existing "dev" interpretation.
 
 ---
 
@@ -306,11 +320,12 @@ Access at: http://localhost:3000
 
 ## 🔮 Future Roadmap (v0.3.0+)
 
-### Completed in v0.4.0 🔄
-- [x] **Detached Persistence** → Background jobs continue without browser connection.
-- [x] **Deep Cleanup** → Atomic removal of repo/docs on restart for 100% clean state.
-- [x] **Seamless Resumption** → Returning to a running job correctly auto-redirects on completion.
 - [x] **State Resilience** → "One Job = One Thread" state isolation.
+
+### Completed in v0.5.0 🛡️
+- [x] **Snapshot Persistence** → History survives server restarts via local metadata archives.
+- [x] **Smart Cleanup** → Reference-counting logic for deleting shared repositories.
+- [x] **UI Polish** → Simplified deletion controls and history source badges.
 
 ### Planned for v0.5.0 (Roadmap)
 

@@ -217,37 +217,66 @@ export async function DELETE(request: NextRequest) {
     try {
         const { id, audience, deleteType } = await request.json();
         // id format: "unjs_destr" (matches folder names)
-        // audience: "user" | "dev" (optional, for deleting specific audience)
-        // deleteType: "all" (tutorial + repo) or "cache" (repo only) or "audience" (specific audience folder)
 
-        if (!id || !deleteType) {
-            return NextResponse.json({ error: "Missing id or deleteType" }, { status: 400 });
+        if (!id) {
+            return NextResponse.json({ error: "Missing id" }, { status: 400 });
         }
 
         const tutorialPath = path.join(TUTORIALS_DIR, id);
         const repoPath = path.join(REPOS_DIR, id);
 
-        if (deleteType === "all") {
-            // Delete both tutorial and repo
-            await rm(tutorialPath, { recursive: true, force: true }).catch(() => { });
-            await rm(repoPath, { recursive: true, force: true }).catch(() => { });
-        } else if (deleteType === "cache") {
-            // Delete only the repo (cache)
-            await rm(repoPath, { recursive: true, force: true }).catch(() => { });
-        } else if (deleteType === "audience" && audience) {
-            // Delete specific audience folder
-            const audiencePath = path.join(tutorialPath, audience);
-            await rm(audiencePath, { recursive: true, force: true }).catch(() => { });
+        console.log(`[Storage API] DELETE request for ${id} (audience: ${audience}, type: ${deleteType})`);
 
-            // Check if tutorial folder is now empty (no user/ or dev/)
+        if (deleteType === "cache") {
+            // Deprecated but keeping for internal safety if needed
+            // The UI will no longer use this. 
+            await rm(repoPath, { recursive: true, force: true }).catch(() => { });
+        } else {
+            // Smart Delete Logic
+            if (audience) {
+                // 1. Delete specific audience subfolder
+                const audiencePath = path.join(tutorialPath, audience);
+                console.log(` - Deleting audience folder: ${audiencePath}`);
+                await rm(audiencePath, { recursive: true, force: true }).catch(() => { });
+            } else {
+                // 2. No audience? User wants to wipe the whole repo name
+                console.log(` - Deleting entire tutorial root: ${tutorialPath}`);
+                await rm(tutorialPath, { recursive: true, force: true }).catch(() => { });
+            }
+
+            // 3. Count remaining versions
+            let hasRemainingVersions = false;
             try {
-                const remaining = await readdir(tutorialPath);
-                const hasContent = remaining.some(f => f === "user" || f === "dev" || f.endsWith(".md"));
-                if (!hasContent) {
-                    // Clean up empty folder
-                    await rm(tutorialPath, { recursive: true, force: true }).catch(() => { });
+                const entries = await readdir(tutorialPath);
+                // A version exists if there is a 'user' folder, 'dev' folder, or legacy .md files
+                const hasUser = entries.includes("user") && audience !== "user";
+                const hasDev = entries.includes("dev") && audience !== "dev";
+                const hasLegacy = entries.some(f => f.endsWith(".md") && f !== "metadata.json");
+
+                // Extra check: must actually contain files to count as a version
+                if (hasUser) {
+                    const userFiles = await readdir(path.join(tutorialPath, "user")).catch(() => []);
+                    if (userFiles.some(f => f.endsWith(".md"))) hasRemainingVersions = true;
                 }
-            } catch { /* ignore */ }
+                if (!hasRemainingVersions && hasDev) {
+                    const devFiles = await readdir(path.join(tutorialPath, "dev")).catch(() => []);
+                    if (devFiles.some(f => f.endsWith(".md"))) hasRemainingVersions = true;
+                }
+                if (!hasRemainingVersions && hasLegacy) hasRemainingVersions = true;
+
+            } catch {
+                // If folder doesn't exist, no versions remain
+                hasRemainingVersions = false;
+            }
+
+            // 4. Cleanup repo and root if nothing left
+            if (!hasRemainingVersions) {
+                console.log(` - No versions remaining for ${id}. Cleaning up repo and root metadata.`);
+                await rm(repoPath, { recursive: true, force: true }).catch(() => { });
+                await rm(tutorialPath, { recursive: true, force: true }).catch(() => { });
+            } else {
+                console.log(` - Other versions still exist for ${id}. Repository preserved.`);
+            }
         }
 
         return NextResponse.json({ success: true });

@@ -115,18 +115,50 @@ export async function DELETE(
         const safeId = id.replace(/[^a-zA-Z0-9_-]/g, ""); // Basic sanitization
         const safeAudience = audience.replace(/[^a-z]/g, "");
 
-        const audienceDir = path.join(TUTORIALS_DIR, safeId, safeAudience);
+        const tutorialRoot = path.join(TUTORIALS_DIR, safeId);
+        const audienceDir = path.join(tutorialRoot, safeAudience);
         const repoDir = path.join(REPOS_DIR, safeId);
 
-        console.log(`[API] Cleaning up for ${safeId}:`);
-        console.log(` - Deleting tutorial audience dir: ${audienceDir}`);
-        console.log(` - Deleting cloned repo dir: ${repoDir}`);
+        console.log(`[Tutorial API] Cleaning up for ${safeId} (audience: ${safeAudience}):`);
 
-        // Parallel deletion for robustness
-        await Promise.all([
-            rm(audienceDir, { recursive: true, force: true }),
-            rm(repoDir, { recursive: true, force: true })
-        ]);
+        // 1. Delete the specific audience folder
+        console.log(` - Deleting audience dir: ${audienceDir}`);
+        await rm(audienceDir, { recursive: true, force: true });
+
+        // 2. Check if any other versions remain
+        let hasRemainingVersions = false;
+        try {
+            const entries = await readdir(tutorialRoot);
+            // Must check for subfolders that are NOT the one we just deleted
+            // and actually contain content (or are marked as generating)
+            const remainingAudiences = entries.filter(e => (e === "user" || e === "dev") && e !== safeAudience);
+
+            for (const aud of remainingAudiences) {
+                const audFiles = await readdir(path.join(tutorialRoot, aud)).catch(() => []);
+                if (audFiles.length > 0) {
+                    hasRemainingVersions = true;
+                    break;
+                }
+            }
+
+            // Check for legacy files in root
+            const legacyFiles = entries.filter(f => f.endsWith(".md") && f !== "metadata.json");
+            if (legacyFiles.length > 0) hasRemainingVersions = true;
+
+        } catch (e) {
+            // Root might already be gone
+        }
+
+        // 3. Conditional cleanup of shared source
+        if (!hasRemainingVersions) {
+            console.log(` - No other versions found. Deleting shared repo and tutorial metadata.`);
+            await Promise.all([
+                rm(repoDir, { recursive: true, force: true }),
+                rm(tutorialRoot, { recursive: true, force: true })
+            ]);
+        } else {
+            console.log(` - Other versions exist. Preserving shared repository.`);
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

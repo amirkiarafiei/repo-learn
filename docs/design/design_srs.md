@@ -41,8 +41,8 @@ To ensure robust, real-time updates and sub-agent differentiation, we utilize La
     *   **Main Agent**: `namespace=()` (empty).
     *   **Sub-Agent**: `namespace=('task_tool', 'subagent_name')`.
 *   **Persistence**: For MVP, LangGraph uses in-memory/file-based checkpointing.
-    *   **Detached Execution**: Starting in v0.3.1, the system uses `client.runs.create()` to initiate server-side runs that persist independently of the client connection.
-    *   **Reconnection (Polling)**: The frontend uses a custom `usePersistentAgent` hook that polls `client.threads.getState()` using a `thread_id`. If a user refreshes or navigates back, the UI hydrates the full state from the server.
+    *   **Persistence (Snapshot Fallback)**: In addition to server-side runs, the system implements **Snapshot-based Persistence**. When a job completes, a serializable snapshot of the thread state (messages, todos, subagent activity) is archived in the tutorial's local `metadata.json`.
+    *   **Reconnection & Failure Recovery**: The frontend uses `usePersistentAgent` for active polling. If the server returns a 404 (e.g., after a server restart), `useThreadHistory` automatically falls back to the local metadata snapshot, ensuring history remains viewable "offline".
     *   **Production**: For production deployments, LangGraph can use Postgres for persistent state storage.
 
 ## 2.3 Error Handling & Resilience
@@ -55,6 +55,9 @@ To ensure robust, real-time updates and sub-agent differentiation, we utilize La
     *   *Draft Phase*: Files are created with temporary IDs or logical names.
     *   *Synthesis Phase*: The Main Agent renames and organizes files into the final `{order}_{title}.md` structure based on the complete context.
 *   **Storage**: Files are written to the shared `data/` volume, accessible by both the Agent (for writing) and the Sidecar (for reading/serving to UI).
+*   **Smart Reference Cleanup**: The system utilizes a reference-counting deletion strategy.
+    *   *Granular Deletion*: Deleting a specific audience version (e.g., "dev") only removes the documentation subfolder.
+    *   *Shared Resource Preservation*: The shared codebase in `repositories/` is ONLY deleted when **all** associated tutorial versions for that repository have been removed.
 
 ## 3. Functional Requirements
 
@@ -326,6 +329,16 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 | **Metadata Resilience**    | Missing Visualization link    | Saved immediately on job finish      |
 | **One Job = One Thread**   | State pollution/leakage       | UUID isolation for every attempt     |
 
+### 8.13 v0.5.0 Snapshot Persistence & Smart Cleanup
+
+| Improvement            | Problem Addressed               | Implementation                          |
+| ---------------------- | ------------------------------- | --------------------------------------- |
+| **Snapshot Fallback**  | History loss on server restart  | Local JSON archiving in `metadata.json` |
+| **Smart Delete Logic** | Shared repo deletion conflicts  | Reference-counted `DELETE` handlers     |
+| **Indicator Badges**   | History source confusion        | `[Live History]` vs `Cached Snapshot`   |
+| **UI Simplification**  | Dangerous/Confusing cache tools | Removed explicit "Delete Code" button   |
+| **Unified Cleanup**    | Zombie data on Stop/Retry       | Smart cleanup helper in `JobPage`       |
+
 ---
 
 ## 9. Acceptance Criteria Validation
@@ -351,5 +364,5 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 
 ---
 
-*Document updated: January 1, 2026 (v0.4.0)*
+*Document updated: January 1, 2026 (v0.5.0)*
 
