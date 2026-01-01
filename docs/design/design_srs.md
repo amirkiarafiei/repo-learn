@@ -316,15 +316,15 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 | **Speed Mode Prompts**     | Slow development testing     | Brief response mode for agents    |
 | **README & Env Templates** | Difficult onboarding         | Root README & .env.example files  |
 
-### 8.12 v0.3.1 Detached Persistence & Robust Cleanup
+### 8.12 v0.4.0 Detached Persistence & Robust Cleanup
 
-| Improvement              | Problem Addressed            | Implementation                     |
-| ------------------------ | ---------------------------- | ---------------------------------- |
-| **Detached Persistence** | UI connection loss kills job | `usePersistentAgent` (runs create) |
-| **Atomic Deep Cleanup**  | Zombie data on restart       | DELETE removes tutorial AND repo   |
-| **Metadata Resilience**  | Missing Visualization link   | Saved immediately on job finish    |
-| **One Job = One Thread** | State pollution/leakage      | UUID isolation for every attempt   |
-
+| Improvement                | Problem Addressed             | Implementation                       |
+| -------------------------- | ----------------------------- | ------------------------------------ |
+| **Detached Persistence**   | UI connection loss kills job  | `usePersistentAgent` (runs create)   |
+| **Context-Aware Resuming** | 404s/Redirect failure on back | Fallback to `activeJob` for metadata |
+| **Atomic Deep Cleanup**    | Zombie data on restart        | DELETE removes tutorial AND repo     |
+| **Metadata Resilience**    | Missing Visualization link    | Saved immediately on job finish      |
+| **One Job = One Thread**   | State pollution/leakage       | UUID isolation for every attempt     |
 
 ---
 
@@ -351,5 +351,5 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 
 ---
 
-*Document updated: January 1, 2026 (v0.3.1)*
+*Document updated: January 1, 2026 (v0.4.0)*
 

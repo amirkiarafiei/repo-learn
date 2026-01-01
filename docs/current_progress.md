@@ -1,8 +1,8 @@
 # RepoLearn - Current Progress & Status
 
 **Last Updated:** January 1, 2026
-**Version:** v0.3.1
-**Status:** ✅ Released (v0.3.1)
+**Version:** v0.4.0
+**Status:** ✅ Released (v0.4.0) - Stable Background execution
 
 ---
 
@@ -113,13 +113,14 @@ RepoLearn is a fully functional MVP demonstrating the **Deep Agent methodology**
 - [x] **Premium Documentation**: Brand new root `README.md` and complete project documentation overhaul.
 - [x] **Frontend Env Template**: Added `.env.example` for the Next.js application.
 
-### Phase 13: Persistence & Detached Execution 🔄 (v0.3.1)
+### Phase 13: Persistence & Detached Execution 🔄 (v0.4.0)
 - [x] **Detached Run Architecture**: Migrated from UI-bound streams to server-side detached runs using `client.runs.create()`.
 - [x] **Persistent Agent Hook**: New `usePersistentAgent` with polling allows navigation away and back without losing progress.
 - [x] **Immutable Thread State**: Enforced "One Job = One Thread" to prevent zombie data and ghost sub-agents.
 - [x] **Deep Metadata Sync**: Fixed race conditions in metadata saving to ensure the Visualization Panel link is always active.
-- [x] **Robust Error Recovery**: Explicit handling for 404 Thread Not Found and filesystem write latency.
+- [x] **Context-Aware Resumption**: Smart fallback to `activeJob` state for seamless redirection when returning to an active job.
 - [x] **Atomic Deep Clean**: Integrated full physical deletion of tutorial and source repository during Retry/Overwrite.
+
 
 
 ---
@@ -305,13 +306,14 @@ Access at: http://localhost:3000
 
 ## 🔮 Future Roadmap (v0.3.0+)
 
-### Completed in v0.3.1 🔄
-- [x] **Detached Persistence** → Background jobs continue without browser connection
-- [x] **Deep Cleanup** → Atomic removal of repo/docs on restart
-- [x] **State Resilience** → "One Job = One Thread" state isolation
-- [x] **Metadata Fixes** → Solidified visualization button reliability
+### Completed in v0.4.0 🔄
+- [x] **Detached Persistence** → Background jobs continue without browser connection.
+- [x] **Deep Cleanup** → Atomic removal of repo/docs on restart for 100% clean state.
+- [x] **Seamless Resumption** → Returning to a running job correctly auto-redirects on completion.
+- [x] **State Resilience** → "One Job = One Thread" state isolation.
 
-### Planned for v0.4.0 (Roadmap)
+### Planned for v0.5.0 (Roadmap)
+
 
 | Feature                   | Description                             | Priority |
 | ------------------------- | --------------------------------------- | -------- |
@@ -334,4 +336,4 @@ Access at: http://localhost:3000
 
 ---
 
-*RepoLearn v0.3.1 - Detached Background Persistence & Robust Cleanup*
+*RepoLearn v0.4.0 - Stable Background execution & Persistence*
