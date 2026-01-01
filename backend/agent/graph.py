@@ -153,7 +153,7 @@ write_file(f"{tutorial_path}/0_overview.md", content)
 Be FAST and BRIEF!"""
 
 # Configure backends for path safety
-class ReadOnlyFilesystemBackend(FilesystemBackend):
+class ReadOnlyRepoBackend(FilesystemBackend):
     """Prevents write/edit operations on the repositories folder."""
     def write(self, file_path: str, content: str) -> WriteResult:
         return WriteResult(error=f"PERMISSION DENIED: Write access not allowed in repository backend for {file_path}. Use /tutorials/ path for your output.")
@@ -161,15 +161,55 @@ class ReadOnlyFilesystemBackend(FilesystemBackend):
     def edit(self, file_path: str, old_string: str, new_string: str, replace_all: bool = False) -> EditResult:
         return EditResult(error=f"PERMISSION DENIED: Edit access not allowed in repository backend for {file_path}. Use /tutorials/ path for your output.")
 
+class RestrictedTutorialsBackend(FilesystemBackend):
+    """Enforces that all writes/edits go into /{repo_name}/{audience}/structure."""
+    
+    def _validate_path(self, file_path: str) -> str | None:
+        """Returns error message if path is invalid, None if valid.
+        Note: file_path here is already stripped of the /tutorials/ prefix by CompositeBackend.
+        Expected format: repo_name/audience/filename.md
+        """
+        parts = file_path.strip("/").split("/")
+        
+        if len(parts) < 3:
+            return (
+                f"INVALID PATH: '{file_path}'. "
+                f"Tutorial files must be written inside specific audience folders. "
+                f"Correct format: /tutorials/{{repo_name}}/{{audience}}/filename.md. "
+                f"Always call get_tutorial_path(url, audience) FIRST to get the correct path."
+            )
+        
+        audience = parts[1]
+        if audience not in ("user", "dev"):
+            return (
+                f"INVALID AUDIENCE: '{audience}' in path '{file_path}'. "
+                f"The second folder must be 'user' or 'dev'. "
+                f"Call get_tutorial_path(url, 'user') or get_tutorial_path(url, 'dev')."
+            )
+        
+        return None  # Valid structure
+
+    def write(self, file_path: str, content: str) -> WriteResult:
+        error = self._validate_path(file_path)
+        if error:
+            return WriteResult(error=error)
+        return super().write(file_path, content)
+
+    def edit(self, file_path: str, old_string: str, new_string: str, replace_all: bool = False) -> EditResult:
+        error = self._validate_path(file_path)
+        if error:
+            return EditResult(error=error)
+        return super().edit(file_path, old_string, new_string, replace_all)
+
 # Read-only access to cloned repositories
-repos_backend = ReadOnlyFilesystemBackend(
+repos_backend = ReadOnlyRepoBackend(
     root_dir=str(REPOS_DIR),
     virtual_mode=True,  # Prevents path traversal
     max_file_size_mb=10,
 )
 
-# Read-write access to tutorials
-tutorials_backend = FilesystemBackend(
+# Read-write access to tutorials with structure enforcement
+tutorials_backend = RestrictedTutorialsBackend(
     root_dir=str(TUTORIALS_DIR),
     virtual_mode=True,
     max_file_size_mb=5,
