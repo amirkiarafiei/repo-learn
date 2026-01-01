@@ -213,6 +213,9 @@ if (hasMessages || hasTodos) {
  ### Priority 5: Handle Persistence Loss ✅ DONE
  Catch 404s and prevent background cross-talk when viewing history.
  
+ ### Priority 6: Fix RepoId Resolution for Snapshot Fallback ✅ DONE
+ In readonly mode, use `tutorialId` instead of deriving from `githubUrl` to enable snapshot metadata fetching.
+ 
  ---
  
- *This audit was last updated on January 1, 2026 at 15:55 local time.*
+ *This audit was last updated on January 1, 2026 at 16:47 local time.*
