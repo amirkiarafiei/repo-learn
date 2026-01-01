@@ -7,6 +7,8 @@ They help with quick analysis of specific parts of the codebase.
 ⚡ SPEED MODE: All subagents are configured for fast, brief responses.
 """
 
+from agent.middleware import create_subagent_tool_middleware
+
 # Code Analyzer Subagent
 # Quick overview of code files
 code_analyzer = {
@@ -49,6 +51,7 @@ code_analyzer = {
 
 Be FAST! Don't overthink it.""",
     "tools": [],  # Uses FilesystemMiddleware tools from parent
+    "middleware": [create_subagent_tool_middleware("code-analyzer")],  # Tool call event emitter
 }
 
 # Documentation Writer Subagent
@@ -95,8 +98,8 @@ doc_writer = {
 
 Write FAST! Users can ask for more detail later.""",
     "tools": [],  # Uses FilesystemMiddleware tools from parent
+    "middleware": [create_subagent_tool_middleware("doc-writer")],  # Tool call event emitter
 }
 
 # List of all available subagents
 SUBAGENTS = [code_analyzer, doc_writer]
-
