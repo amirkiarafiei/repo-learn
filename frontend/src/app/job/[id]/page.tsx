@@ -165,12 +165,33 @@ function JobPageContent() {
 
 
 
+    // Unified Smart Cleanup for Stop/Retry
+    const performSmartCleanup = async () => {
+        if (!resolvedRepoId || !audience) return;
+
+        try {
+            console.log(`[JobPage] Performing smart cleanup for: ${resolvedRepoId} (audience: ${audience})`);
+            const res = await fetch(`/api/tutorials/${encodeURIComponent(resolvedRepoId)}?audience=${audience}`, {
+                method: "DELETE"
+            });
+
+            if (!res.ok) {
+                console.warn("[JobPage] Cleanup API returned non-ok status:", res.status);
+            }
+        } catch (e) {
+            console.error("[JobPage] Failed to perform smart cleanup:", e);
+        }
+    };
+
     // Handle Stop
     const handleStop = async () => {
         setShowStopConfirm(false);
-        stop(); // Calls stream.stop() and clearJob() internally in our modified hook
-        // But let's be explicit with context
+        stop();
         clearJob();
+
+        // Ensure we don't leave zombie files
+        await performSmartCleanup();
+
         router.push("/");
     };
 
@@ -180,21 +201,8 @@ function JobPageContent() {
         stop();
         clearJob();
 
-        // Cleanup existing tutorial content
-        if (githubUrl) {
-            const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
-            if (match) {
-                const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase();
-                try {
-                    console.log("[JobPage] Cleaning up tutorial for retry:", repoId);
-                    await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`, {
-                        method: "DELETE"
-                    });
-                } catch (e) {
-                    console.error("Failed to cleanup tutorial:", e);
-                }
-            }
-        }
+        // Cleanup existing tutorial content before reloading
+        await performSmartCleanup();
 
         // Reload page to same URL to restart fresh
         window.location.reload();

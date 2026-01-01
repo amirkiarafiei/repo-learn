@@ -315,25 +315,15 @@ export default function Home() {
                   {openMenu === tutorial.fullId && (
                     <div
                       ref={menuRef}
-                      className="absolute top-12 right-4 z-50 w-44 rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl py-1 animate-fade-in"
+                      className="absolute top-12 right-4 z-50 w-32 rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl py-1 animate-fade-in"
                     >
-                      {storage.repos.includes(tutorial.id) && (
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(tutorial.id, tutorial.audience, "cache")}
-                          className="w-full text-left px-3 py-2 text-sm text-amber-400 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
-                        >
-                          <span>⚡</span>
-                          Delete Code
-                        </button>
-                      )}
                       <button
                         type="button"
-                        onClick={() => handleDelete(tutorial.id, tutorial.audience, "all")}
+                        onClick={() => handleDelete(tutorial.id, tutorial.audience, "audience")}
                         className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                       >
                         <span>🗑</span>
-                        Delete All
+                        Delete
                       </button>
                     </div>
                   )}
