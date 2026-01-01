@@ -66,3 +66,15 @@ This log tracks the evolution of RepoLearn, focusing on the order of feature imp
   - Smooth progress bar transitions in the Planner.
 - Implemented a unified **Toast Notification System** with slide/fade animations for status updates.
 - Enhanced the UI with meaningful metadata: Star counts, storage size statistics, and history source badges (`[Live History]` vs `Cached Snapshot`).
+
+### Sandbox Hardening & Agent Stability
+- **Filesystem Lockdown**:
+  - Implemented `ReadOnlyRepoBackend` to guarantee source repositories are never modified.
+  - Implemented `RestrictedTutorialsBackend` to strictly enforce directory structure (`{repo}/{audience}/`) and prevent "zombie file" pollution.
+- **Robust Orchestration**:
+  - Added `complete_tutorial` tool as a mandatory explicit callback for defining "Success" state.
+  - Mitigated hallucinated tool calls with stricter prompt engineering.
+- **Recovery Mechanisms**:
+  - Implemented **"Continue Analysis"** feature.
+  - Allows users to resume an agent that stopped early (e.g., due to token limits or premature stop) on the exact same thread.
+  - Includes a 2-attempt safety limit and specific resumption prompts for the Brain agent.

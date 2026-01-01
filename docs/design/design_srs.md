@@ -61,6 +61,10 @@ RepoLearn uses `CompositeBackend` to enforce strict security boundaries for the 
 - **Tutorials Route (Read-Write)**: Points to `data/tutorials/`. Agents can only write files within this specific context.
 - **Virtual Mode**: All paths are virtualized to prevent `../` path traversal attacks.
 
+### 3.3 Safety Backends
+- **`ReadOnlyRepoBackend`**: Overrides `write()` and `edit()` to physically block any modifications to the repository cache.
+- **`RestrictedTutorialsBackend`**: Validates all write paths. Denies access unless the path follows the strict `/tutorials/{repo}/{audience}/` structure, preventing file pollution.
+
 ---
 
 ## 4. Streaming & Persistence Logic
@@ -114,6 +118,13 @@ The tutorial viewer (`/tutorial/[id]`) features an "Interactive Learning" mode:
 - **TabBar**: Manages multiple open code files.
 - **Contextual Interceptor**: A custom Markdown renderer that listens for links to local files (e.g., `[Auth Logic](src/auth/index.ts)`).
 - **Execution**: Clicking a link in the doc triggers a `window.dispatchEvent` that the IDE captures to fuzzy-search and open the referenced file.
+
+### 6.3 Agent Recovery ("Continue")
+To handle early stops or network interruptions:
+- **Detection**: The UI identifies runs that ended without calling the specific `complete_tutorial` callback.
+- **Action**: Users can click "Continue with tasks".
+- **Limit**: Continuation is capped at 2 attempts to prevent infinite loops.
+- **Logic**: A new run is started on the existing thread with a prompt to review remaining todos.
 
 ---
 
