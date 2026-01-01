@@ -53,9 +53,10 @@ function JobPageContent() {
 
     // Derive repoId for history fallback
     // In readonly mode, prefer tutorialId (which is already in repoId format), otherwise derive from githubUrl
+    // For live mode, fallback to activeJob?.repoId to support resume scenarios (where URL lacks ?url=)
     const match = githubUrl?.match(/github\.com\/([^/]+)\/([^/]+)/);
     const derivedRepoId = match ? `${match[1]}_${match[2]}`.toLowerCase().replace(/\.git$/, "") : null;
-    const resolvedRepoId = isReadonly ? (tutorialId || derivedRepoId) : derivedRepoId;
+    const resolvedRepoId = isReadonly ? (tutorialId || derivedRepoId) : (derivedRepoId || activeJob?.repoId);
 
     const historyStream = useThreadHistory(
         isReadonly ? jobId : null,
