@@ -62,8 +62,15 @@ class SubagentToolEventMiddleware(AgentMiddleware):
             request: The tool call request
         """
         # Extract tool information from request
-        tool_name = getattr(request, 'tool_name', getattr(request, 'name', 'unknown'))
-        tool_args = getattr(request, 'tool_args', getattr(request, 'args', {}))
+        # request is a ToolCallRequest which wraps the data in a .tool_call dictionary
+        tool_call = getattr(request, 'tool_call', {})
+        if isinstance(tool_call, dict):
+            tool_name = tool_call.get('name', 'unknown')
+            tool_args = tool_call.get('args', {})
+        else:
+            # Fallback for other request types
+            tool_name = getattr(request, 'tool_name', getattr(request, 'name', 'unknown'))
+            tool_args = getattr(request, 'tool_args', getattr(request, 'args', {}))
         
         # Get thread_id from the running context
         thread_id = self._get_thread_id()
