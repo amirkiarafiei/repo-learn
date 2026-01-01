@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readdir, rm, stat, readFile, writeFile } from "fs/promises";
+import { readdir, rm, stat, readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 const DATA_DIR = path.join(process.cwd(), "..", "data");
@@ -226,6 +226,19 @@ export async function DELETE(request: NextRequest) {
         const repoPath = path.join(REPOS_DIR, id);
 
         console.log(`[Storage API] DELETE request for ${id} (audience: ${audience}, type: ${deleteType})`);
+
+        if (deleteType === "all") {
+            // Full System Wipe
+            console.log(`[Storage API] PERFORMING FULL SYSTEM WIPE`);
+            await rm(TUTORIALS_DIR, { recursive: true, force: true }).catch(() => { });
+            await rm(REPOS_DIR, { recursive: true, force: true }).catch(() => { });
+
+            // Re-create empty directories
+            await mkdir(TUTORIALS_DIR, { recursive: true }).catch(() => { });
+            await mkdir(REPOS_DIR, { recursive: true }).catch(() => { });
+
+            return NextResponse.json({ success: true, message: "System wiped successfully" });
+        }
 
         if (deleteType === "cache") {
             // Deprecated but keeping for internal safety if needed

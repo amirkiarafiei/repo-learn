@@ -30,6 +30,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [isWiping, setIsWiping] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
   const { activeJob } = useJob();
@@ -83,6 +85,24 @@ export default function Home() {
       addToast("Failed to delete", "error");
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setIsWiping(true);
+    setShowDeleteAllModal(false);
+    try {
+      await fetch("/api/storage", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "system", deleteType: "all" }),
+      });
+      await fetchStorage();
+      addToast("System wiped successfully", "success");
+    } catch {
+      addToast("Failed to wipe system", "error");
+    } finally {
+      setIsWiping(false);
     }
   };
 
@@ -160,27 +180,38 @@ export default function Home() {
       <section className="px-6 py-16 border-t border-zinc-800/50">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <div>
+            <div className="flex-1">
               <h3 className="text-2xl font-bold">Your Tutorials</h3>
-              <p className="text-zinc-500 text-sm mt-1">Manage your generated tutorials</p>
-            </div>
-            {storage?.stats && (
-              <div className="flex items-center gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/50"></div>
-                  <span className="text-zinc-400">Docs</span>
-                  <span className="font-mono text-zinc-200">{storage.stats.tutorialsSize}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50"></div>
-                  <span className="text-zinc-400">Code</span>
-                  <span className="font-mono text-zinc-200">{storage.stats.reposSize}</span>
-                </div>
-                <div className="px-3 py-1 rounded-lg bg-zinc-800/50 border border-zinc-700">
-                  <span className="text-zinc-400">Total:</span>
-                  <span className="font-mono text-zinc-200 ml-2">{storage.stats.totalSize}</span>
-                </div>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-zinc-500 text-sm">Manage your generated tutorials</p>
+                {storage?.stats && (
+                  <div className="flex items-center gap-2.5 text-[11px] translate-y-[1px]">
+                    <span className="text-zinc-800">•</span>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/5 border border-emerald-500/10">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]"></div>
+                      <span className="text-zinc-500">Docs:</span>
+                      <span className="text-emerald-400/70 font-medium">{storage.stats.tutorialsSize}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/5 border border-amber-500/10">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)]"></div>
+                      <span className="text-zinc-500">Code:</span>
+                      <span className="text-amber-400/70 font-medium">{storage.stats.reposSize}</span>
+                    </div>
+                    <div className="text-zinc-600 font-light ml-0.5">
+                      Total: <span className="text-zinc-400">{storage.stats.totalSize}</span>
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
+            {storage?.tutorials && storage.tutorials.length > 0 && (
+              <button
+                onClick={() => setShowDeleteAllModal(true)}
+                disabled={isWiping}
+                className="text-red-500 hover:text-red-400 text-[10px] font-bold uppercase tracking-widest transition-all px-4 py-2 rounded-lg hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 disabled:opacity-30"
+              >
+                {isWiping ? "Wiping..." : "Delete All"}
+              </button>
             )}
           </div>
 
@@ -362,6 +393,38 @@ export default function Home() {
           </div>
         </div>
       </footer >
+
+      {/* Delete All Confirmation Modal */}
+      {showDeleteAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowDeleteAllModal(false)}
+          ></div>
+          <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-8 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold mb-3">System Wipe</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed mb-8">
+              Are you sure you want to delete <span className="text-white font-medium whitespace-nowrap">everything</span>?
+              This will permanently remove all tutorials, reasoning history, and cached repositories.
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteAllModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-900 text-zinc-400 font-medium hover:bg-zinc-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                className="flex-[1.5] px-4 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-900/20"
+              >
+                Delete Everything
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main >
   );
 }
