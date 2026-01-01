@@ -24,8 +24,9 @@ function JobPageContent() {
     const [showStopConfirm, setShowStopConfirm] = useState(false);
     const [showRetryConfirm, setShowRetryConfirm] = useState(false);
 
-    // FileSystem Panel State
+    // Sidebar Panel States
     const [isFSCollapsed, setIsFSCollapsed] = useState(false);
+    const [isPlannerCollapsed, setIsPlannerCollapsed] = useState(false);
     const [fsRevalidateKey, setFsRevalidateKey] = useState(0);
     const [fsHeight, setFsHeight] = useState(300);
     const [isResizing, setIsResizing] = useState(false);
@@ -569,14 +570,22 @@ function JobPageContent() {
             <div className="flex-1 grid grid-cols-12 min-h-0 bg-black" ref={containerRef}>
                 {/* Left Panel: Planner + FileSystem (3 cols) */}
                 <div className="col-span-3 min-h-0 flex flex-col border-r border-zinc-900 overflow-hidden">
-                    {/* Planner Section - Shrinks when FS is open */}
+                    {/* Planner Section - Shrinks when FS is open or when manually collapsed */}
                     <div className={`relative flex flex-col overflow-hidden min-h-0 ${!isResizing ? 'transition-all duration-300 ease-in-out' : ''}`}
-                        style={{ flex: isFSCollapsed ? '1' : `0 1 calc(100% - ${fsHeight}px)` }}>
-                        <PlannerPanel todos={todos} isLoading={isLoading && !isReadonly} />
+                        style={{
+                            flex: isPlannerCollapsed ? 'none' : '1',
+                            height: isPlannerCollapsed ? 48 : 'auto'
+                        }}>
+                        <PlannerPanel
+                            todos={todos}
+                            isLoading={isLoading && !isReadonly}
+                            isCollapsed={isPlannerCollapsed}
+                            onToggleCollapse={() => setIsPlannerCollapsed(!isPlannerCollapsed)}
+                        />
                     </div>
 
-                    {/* Resizer Handle */}
-                    {!isFSCollapsed && (
+                    {/* Resizer Handle - Hidden if either panel is collapsed */}
+                    {!isFSCollapsed && !isPlannerCollapsed && (
                         <div
                             className={`h-1 cursor-row-resize bg-zinc-800 hover:bg-blue-500 active:bg-blue-600 transition-colors z-20`}
                             onMouseDown={startResizing}
@@ -585,7 +594,10 @@ function JobPageContent() {
 
                     {/* FileSystem Section */}
                     <div className={`bg-black z-10 flex flex-col min-h-0 overflow-hidden ${!isResizing ? 'transition-all duration-300 ease-in-out' : ''}`}
-                        style={{ height: isFSCollapsed ? 48 : fsHeight }}>
+                        style={{
+                            height: isFSCollapsed ? 48 : (isPlannerCollapsed ? 'auto' : fsHeight),
+                            flex: (isPlannerCollapsed && !isFSCollapsed) ? '1' : 'none'
+                        }}>
                         <FileSystemPanel
                             repoId={resolvedRepoId ?? null}
                             audience={audience ?? null}
