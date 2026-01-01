@@ -52,8 +52,10 @@ function JobPageContent() {
     const liveAgent = usePersistentAgent({ disabled: isReadonly });
 
     // Derive repoId for history fallback
+    // In readonly mode, prefer tutorialId (which is already in repoId format), otherwise derive from githubUrl
     const match = githubUrl?.match(/github\.com\/([^/]+)\/([^/]+)/);
-    const resolvedRepoId = match ? `${match[1]}_${match[2]}`.toLowerCase().replace(/\.git$/, "") : null;
+    const derivedRepoId = match ? `${match[1]}_${match[2]}`.toLowerCase().replace(/\.git$/, "") : null;
+    const resolvedRepoId = isReadonly ? (tutorialId || derivedRepoId) : derivedRepoId;
 
     const historyStream = useThreadHistory(
         isReadonly ? jobId : null,

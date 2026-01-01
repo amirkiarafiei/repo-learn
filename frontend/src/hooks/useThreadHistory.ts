@@ -42,14 +42,20 @@ export function useThreadHistory(threadId: string | null, repoId?: string | null
             let snapshot: any = null;
             if (repoId && audience) {
                 try {
+                    console.log(`[useThreadHistory] Fetching snapshot: repoId=${repoId}, audience=${audience}`);
                     const metaRes = await fetch(`/api/tutorials/${encodeURIComponent(repoId)}/metadata?audience=${audience}`);
                     if (metaRes.ok) {
                         const meta = await metaRes.json();
                         snapshot = meta.snapshot;
+                        console.log(`[useThreadHistory] Snapshot found:`, snapshot ? `${snapshot.messages?.length || 0} messages` : "none");
+                    } else {
+                        console.warn(`[useThreadHistory] Metadata fetch returned status: ${metaRes.status}`);
                     }
                 } catch (e) {
                     console.warn("[useThreadHistory] Failed to fetch metadata for snapshot check:", e);
                 }
+            } else {
+                console.warn(`[useThreadHistory] Missing repoId or audience for snapshot fetch: repoId=${repoId}, audience=${audience}`);
             }
 
             const client = new Client({ apiUrl });
