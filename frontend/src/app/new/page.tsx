@@ -196,7 +196,7 @@ export default function NewRepository() {
                             <span className="text-sm">Home</span>
                         </button>
                         <div className="h-5 w-px bg-zinc-700" />
-                        <Link href="/" className="text-lg font-bold tracking-tight">
+                        <Link href="/" className="text-xl font-semibold tracking-tight">
                             <span className="text-blue-600">Repo</span>
                             <span className="text-white">Learn</span>
                         </Link>
@@ -217,13 +217,13 @@ export default function NewRepository() {
 
             {/* Form */}
             <section className="flex-1 flex items-center justify-center px-6 py-16">
-                <div className="w-full max-w-lg animate-fade-in">
-                    <div className="text-center mb-10">
-                        <h2 className="text-3xl font-bold mb-3">Add Repository</h2>
-                        <p className="text-zinc-500">Enter a GitHub URL to generate a tutorial</p>
+                <div className="w-full max-w-md animate-fade-in">
+                    <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold mb-2">Add Repository</h2>
+                        <p className="text-xs text-zinc-500">Enter a GitHub URL to generate a tutorial</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-8">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Error Message */}
                         {checkError && (
                             <div className="p-4 bg-red-900/20 border border-red-800 rounded-xl text-red-400 text-sm">
@@ -244,7 +244,7 @@ export default function NewRepository() {
                                     onChange={(e) => setUrl(e.target.value)}
                                     placeholder="https://github.com/owner/repo"
                                     required
-                                    className="w-full px-5 py-4 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-zinc-500 transition-all focus-glow"
+                                    className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-zinc-500 transition-all focus-glow text-sm"
                                 />
                                 {url && (
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500">
@@ -275,10 +275,10 @@ export default function NewRepository() {
                                             onChange={() => setAudience(option.value as "user" | "dev")}
                                             className="sr-only peer"
                                         />
-                                        <div className="p-5 bg-zinc-900/50 border border-zinc-700 rounded-xl peer-checked:border-blue-500 peer-checked:bg-blue-500/10 transition-all hover:border-zinc-600 hover-lift">
-                                            <div className="text-2xl mb-2">{option.icon}</div>
-                                            <div className="font-semibold text-zinc-100">{option.label}</div>
-                                            <div className="text-sm text-zinc-500">{option.desc}</div>
+                                        <div className="p-4 bg-zinc-900/50 border border-zinc-700 rounded-xl peer-checked:border-blue-500 peer-checked:bg-blue-500/10 transition-all hover:border-zinc-600 hover-lift">
+                                            <div className="text-xl mb-1">{option.icon}</div>
+                                            <div className="font-semibold text-zinc-100 text-sm">{option.label}</div>
+                                            <div className="text-xs text-zinc-500">{option.desc}</div>
                                         </div>
                                     </label>
                                 ))}
@@ -304,10 +304,10 @@ export default function NewRepository() {
                                             onChange={() => setDepth(option.value as "basic" | "detailed")}
                                             className="sr-only peer"
                                         />
-                                        <div className="p-5 bg-zinc-900/50 border border-zinc-700 rounded-xl peer-checked:border-blue-500 peer-checked:bg-blue-500/10 transition-all hover:border-zinc-600 hover-lift">
-                                            <div className="text-2xl mb-2">{option.icon}</div>
-                                            <div className="font-semibold text-zinc-100">{option.label}</div>
-                                            <div className="text-sm text-zinc-500">{option.desc}</div>
+                                        <div className="p-4 bg-zinc-900/50 border border-zinc-700 rounded-xl peer-checked:border-blue-500 peer-checked:bg-blue-500/10 transition-all hover:border-zinc-600 hover-lift">
+                                            <div className="text-xl mb-1">{option.icon}</div>
+                                            <div className="font-semibold text-zinc-100 text-sm">{option.label}</div>
+                                            <div className="text-xs text-zinc-500">{option.desc}</div>
                                         </div>
                                     </label>
                                 ))}
@@ -318,7 +318,7 @@ export default function NewRepository() {
                         <button
                             type="submit"
                             disabled={isLoading || !url}
-                            className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-zinc-700 disabled:to-zinc-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all hover-lift flex items-center justify-center gap-3"
+                            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-zinc-700 disabled:to-zinc-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all hover-lift flex items-center justify-center gap-3 text-sm"
                         >
                             {isLoading ? (
                                 <>

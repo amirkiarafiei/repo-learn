@@ -8,6 +8,7 @@ import { useThreadHistory } from "@/hooks/useThreadHistory";
 import { PlannerPanel } from "@/components/PlannerPanel";
 import { BrainPanel } from "@/components/BrainPanel";
 import { GridPanel } from "@/components/GridPanel";
+import { FileSystemPanel } from "@/components/FileSystemPanel";
 import { useJob } from "@/context/JobContext";
 import { useToast } from "@/components/Toast";
 
@@ -22,6 +23,51 @@ function JobPageContent() {
     // Dialog states
     const [showStopConfirm, setShowStopConfirm] = useState(false);
     const [showRetryConfirm, setShowRetryConfirm] = useState(false);
+
+    // FileSystem Panel State
+    const [isFSCollapsed, setIsFSCollapsed] = useState(false);
+    const [fsRevalidateKey, setFsRevalidateKey] = useState(0);
+    const [fsHeight, setFsHeight] = useState(300);
+    const [isResizing, setIsResizing] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const startResizing = useCallback((e: React.MouseEvent) => {
+        setIsResizing(true);
+        e.preventDefault();
+    }, []);
+
+    const stopResizing = useCallback(() => {
+        setIsResizing(false);
+    }, []);
+
+    const resize = useCallback((e: MouseEvent) => {
+        if (!isResizing || !containerRef.current) return;
+
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const newHeight = containerRect.bottom - e.clientY;
+
+        // Constraints: min 100px, max 70% of container height
+        const minHeight = 100;
+        const maxHeight = containerRect.height * 0.7;
+
+        if (newHeight >= minHeight && newHeight <= maxHeight) {
+            setFsHeight(newHeight);
+        }
+    }, [isResizing]);
+
+    useEffect(() => {
+        if (isResizing) {
+            window.addEventListener("mousemove", resize);
+            window.addEventListener("mouseup", stopResizing);
+        } else {
+            window.removeEventListener("mousemove", resize);
+            window.removeEventListener("mouseup", stopResizing);
+        }
+        return () => {
+            window.removeEventListener("mousemove", resize);
+            window.removeEventListener("mouseup", stopResizing);
+        };
+    }, [isResizing, resize, stopResizing]);
 
     // Get mode and params from query (with fallbacks to activeJob for resumption)
     const githubUrl = searchParams.get("url");
@@ -111,6 +157,15 @@ function JobPageContent() {
         }
     }, [isReadonly, liveAgent.status, isComplete, completeJob, addToast, saveThreadMetadata, audience, githubUrl, activeJob?.threadId, liveAgent.snapshot]);
 
+    // Revalidate Filesystem when agent performs relevant actions
+    // Heuristic: If we see a tool message or a generic update, trigger a check
+    useEffect(() => {
+        if (!messages || messages.length === 0) return;
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg) {
+            setFsRevalidateKey(k => k + 1);
+        }
+    }, [messages ? messages.length : 0]);
 
     // Pre-create tutorial directory before analysis starts
     const ensureTutorialDir = useCallback(async (repoId: string, aud: "user" | "dev") => {
@@ -334,7 +389,7 @@ function JobPageContent() {
         hasStartedRef.current;
 
     return (
-        <main className="h-screen flex flex-col relative">
+        <main className={`h-screen flex flex-col relative ${isResizing ? 'select-none' : ''}`}>
             {/* Stop Confirmation Dialog */}
             {showStopConfirm && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
@@ -388,7 +443,7 @@ function JobPageContent() {
             )}
 
             {/* Header */}
-            <header className="border-b border-zinc-800 px-6 py-4 flex-shrink-0">
+            <header className="border-b border-zinc-800 px-6 py-2 flex-shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-4">
@@ -511,14 +566,38 @@ function JobPageContent() {
             )}
 
             {/* 3-Panel Layout */}
-            <div className="flex-1 grid grid-cols-12 min-h-0">
-                {/* Left Panel: Planner (3 cols) */}
-                <div className="col-span-3 min-h-0">
-                    <PlannerPanel todos={todos} isLoading={isLoading && !isReadonly} />
+            <div className="flex-1 grid grid-cols-12 min-h-0 bg-black" ref={containerRef}>
+                {/* Left Panel: Planner + FileSystem (3 cols) */}
+                <div className="col-span-3 min-h-0 flex flex-col border-r border-zinc-900 overflow-hidden">
+                    {/* Planner Section - Shrinks when FS is open */}
+                    <div className={`relative flex flex-col overflow-hidden min-h-0 ${!isResizing ? 'transition-all duration-300 ease-in-out' : ''}`}
+                        style={{ flex: isFSCollapsed ? '1' : `0 1 calc(100% - ${fsHeight}px)` }}>
+                        <PlannerPanel todos={todos} isLoading={isLoading && !isReadonly} />
+                    </div>
+
+                    {/* Resizer Handle */}
+                    {!isFSCollapsed && (
+                        <div
+                            className={`h-1 cursor-row-resize bg-zinc-800 hover:bg-blue-500 active:bg-blue-600 transition-colors z-20`}
+                            onMouseDown={startResizing}
+                        />
+                    )}
+
+                    {/* FileSystem Section */}
+                    <div className={`bg-black z-10 flex flex-col min-h-0 overflow-hidden ${!isResizing ? 'transition-all duration-300 ease-in-out' : ''}`}
+                        style={{ height: isFSCollapsed ? 48 : fsHeight }}>
+                        <FileSystemPanel
+                            repoId={resolvedRepoId ?? null}
+                            audience={audience ?? null}
+                            isCollapsed={isFSCollapsed}
+                            onToggleCollapse={() => setIsFSCollapsed(!isFSCollapsed)}
+                            revalidateKey={fsRevalidateKey}
+                        />
+                    </div>
                 </div>
 
                 {/* Center Panel: The Brain (6 cols) */}
-                <div className="col-span-6 min-h-0">
+                <div className="col-span-6 min-h-0 border-r border-zinc-900">
                     <BrainPanel messages={messages} isLoading={isLoading && !isReadonly} />
                 </div>
 
