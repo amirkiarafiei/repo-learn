@@ -173,21 +173,46 @@ if (hasMessages || hasTodos) {
 4. Added proper logging for debugging
 
 ---
-
-## Recommended Fixes
-
-### Priority 1: Add `useRef` Guard ✅ DONE
-Prevent double execution of `submitAnalysis` using a synchronous guard.
-
-### Priority 2: Fix Completion Detection ✅ DONE
-Trust `onFinish` and add `onError` handler for explicit error handling.
-
-### Priority 3: Fix View Tutorial Link ✅ DONE
-Convert GitHub URL to repo ID format.
-
-### Priority 4: Validate Thread ID ✅ DONE
-Ensure `threadId` is valid before using in redirect logic.
-
----
-
-*This audit was last updated on January 1, 2026 at 01:15 local time.*
+ 
+ ## 🐛 Bug #8: Thread Persistence Loss & Polling Cross-talk (MODERATE)
+ 
+ **Files:** `usePersistentAgent.ts`, `useThreadHistory.ts`, `JobPage.tsx`
+ **Severity:** 🟠 Moderate
+ 
+ **Problem:**
+ 1. **Persistence Loss**: LangGraph dev server stores thread state in-memory. If the server is restarted (e.g., stopping/starting the backend), all `thread_id` records become 404. Since tutorial metadata stores these IDs, clicking "Visualization Panel" leads to an unhelpful raw HTTP error.
+ 2. **Polling Cross-talk**: `usePersistentAgent` (which handles active jobs) polls `useJob().activeJob`. If a user views a *historical* job in readonly mode while they have a (dead) active job in `localStorage`, the live agent hook tries to poll the dead thread, flooding the console with 404s and potentially showing errors on the wrong page.
+ 
+ **Impact:**
+ - Confusing raw 404 errors for users after server restarts.
+ - Console errors reported as "logical bugs" by developers.
+ - Incorrect error display if two threads are being tracked simultaneously.
+ 
+ **Fix (implemented):**
+ 1. **Graceful Error Handling**: Updated `useThreadHistory` and `usePersistentAgent` to catch 404 errors and provide a human-friendly message: *"Session history lost (404). Local development server resets state if restarted."*
+ 2. **Polling Disable**: Added a `disabled` option to `usePersistentAgent`.
+ 3. **Context Sensitivity**: `JobPage.tsx` now passes `disabled: isReadonly` to `usePersistentAgent` when in history mode, effectively silencing active job polling while viewing history.
+ 4. **Fixed Typo**: Corrected "Tweet 404" typo in previous error message logs.
+ 
+ ---
+ 
+ ## Recommended Fixes
+ 
+ ### Priority 1: Add `useRef` Guard ✅ DONE
+ Prevent double execution of `submitAnalysis` using a synchronous guard.
+ 
+ ### Priority 2: Fix Completion Detection ✅ DONE
+ Trust `onFinish` and add `onError` handler for explicit error handling.
+ 
+ ### Priority 3: Fix View Tutorial Link ✅ DONE
+ Convert GitHub URL to repo ID format.
+ 
+ ### Priority 4: Validate Thread ID ✅ DONE
+ Ensure `threadId` is valid before using in redirect logic.
+ 
+ ### Priority 5: Handle Persistence Loss ✅ DONE
+ Catch 404s and prevent background cross-talk when viewing history.
+ 
+ ---
+ 
+ *This audit was last updated on January 1, 2026 at 15:55 local time.*
