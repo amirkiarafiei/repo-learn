@@ -95,3 +95,16 @@ This log tracks the evolution of RepoLearn, focusing on the order of feature imp
   - Eliminated visual noise by removing redundant headers and sub-containers.
 - **Brand Consistency**:
   - Standardized the "RepoLearn" visual identity and logo sizing across all application routes.
+
+### Subagent Tool Visibility (The "Hidden Logs" Breakthrough)
+- **Problem**: Deep Agents library filters subagent activity from the main graph state to protect context windows, making them invisible to the standard frontend polling mechanism.
+- **Solution (Sidecar Pipeline)**:
+  - **Intercepting Middleware**: Built a custom `SubagentToolEventMiddleware` to catch tool calls at the source.
+  - **In-Memory Store**: Developed a thread-safe, in-memory store on the backend to cache these events without polluting the agent's memory.
+  - **Real-Time Tunneling**: Created a specialized FastAPI endpoint (`/tool-calls`) to serve these logs directly to the frontend.
+  - **Polished UX**: 
+    - Real-time "terminal-style" log feed with auto-scroll.
+    - Status badges (e.g., "12 calls").
+    - Ultra-minimal scrollbars for a focused research feel.
+- **Historical Fidelity**: Integrated tool call serialization into `metadata.json`, ensuring the full "thinking" process is preserved in snapshots.
+- **Stability**: Fixed a critical "dehydration" bug where historical timestamps were loaded as strings instead of Date objects, causing UI crashes during snapshot sorting.

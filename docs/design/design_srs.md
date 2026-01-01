@@ -85,6 +85,13 @@ On job completion, the system performs an **Automated History Archive**:
 The `usePersistentAgent` and `useThreadHistory` hooks implement a fail-safe loading strategy:
 - **Primary**: Attempt to fetch live state from the LangGraph server.
 - **Secondary (Fallback)**: If the server returns a 404, the UI automatically detects the local snapshot in `metadata.json` and hydrates the visualization from disk.
+    
+### 4.4 Subagent Tool Call Visibility (Option B)
+Subagent messages are intentionally excluded from the main LangGraph state by the Deep Agents library to prevent context window bloat for the Brain agent. To visualize these tool calls in real-time while maintaining this isolation:
+- **Sidecar Store**: An in-memory, thread-safe `ToolCallStore` accumulates subagent activity on the backend.
+- **Middleware Interception**: Custom `SubagentToolEventMiddleware` intercepts tool calls and writes to the store instead of modifying the graph state.
+- **Dedicated API**: A custom FastAPI app mounted at `/tool-calls/{thread_id}` allows the frontend to poll for this activity.
+- **Persistence**: Upon job completion, these logs are serialized into `metadata.json` to support historical viewing.
 
 ---
 
