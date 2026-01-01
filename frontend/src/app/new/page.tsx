@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useJob } from "@/context/JobContext";
 
 export default function NewRepository() {
     const router = useRouter();
+    const { activeJob, clearJob } = useJob();
     const [url, setUrl] = useState("");
     const [audience, setAudience] = useState<"user" | "dev">("user");
     const [depth, setDepth] = useState<"basic" | "detailed">("basic");
@@ -13,11 +15,44 @@ export default function NewRepository() {
 
     // Overwrite confirmation state
     const [showConfirm, setShowConfirm] = useState(false);
+    const [showActiveJobDialog, setShowActiveJobDialog] = useState(false);
     const [existingTutorial, setExistingTutorial] = useState<string | null>(null);
     const [checkError, setCheckError] = useState<string | null>(null);
 
-    const proceedToJob = () => {
+    // Check for active job on mount and whenever it changes
+    useEffect(() => {
+        if (activeJob && activeJob.status === "generating") {
+            setShowActiveJobDialog(true);
+        } else {
+            setShowActiveJobDialog(false);
+        }
+    }, [activeJob]);
+
+    const proceedToJob = async (isOverwrite = false) => {
         setIsLoading(true);
+
+        // Cleanup if overwriting
+        if (isOverwrite && url) {
+            const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
+            if (match) {
+                const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase();
+                try {
+                    console.log("[NewPage] Cleaning up existing tutorial for overwrite:", repoId);
+                    await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`, {
+                        method: "DELETE"
+                    });
+                } catch (e) {
+                    console.error("Failed to cleanup tutorial:", e);
+                }
+            }
+        }
+
+        // BUG FIX: If overwriting, or just starting new, we must CLEAR the old active job first
+        // to prevent the JobPage from trying to "resume" the old completed one.
+        if (isOverwrite || (activeJob && activeJob.status !== "generating")) {
+            clearJob();
+        }
+
         const jobId = crypto.randomUUID();
         const params = new URLSearchParams({
             url: url,
@@ -30,6 +65,12 @@ export default function NewRepository() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setCheckError(null);
+
+        // Double check active job just in case
+        if (activeJob && activeJob.status === "generating") {
+            setShowActiveJobDialog(true);
+            return;
+        }
 
         // Validate URL format
         const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
@@ -68,6 +109,46 @@ export default function NewRepository() {
 
     return (
         <main className="min-h-screen flex flex-col">
+            {/* Active Job Blocking Dialog */}
+            {showActiveJobDialog && activeJob && (
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+                    <div className="bg-zinc-900 border border-blue-500/50 rounded-xl p-8 max-w-md shadow-2xl relative overflow-hidden">
+                        {/* Background orbital animation */}
+                        <div className="absolute top-0 right-0 p-3 opacity-20">
+                            <div className="w-24 h-24 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
+                        </div>
+
+                        <div className="flex items-center gap-3 mb-4 relative z-10">
+                            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <span className="text-2xl animate-pulse">⚡</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-white">Agent is Busy</h3>
+                        </div>
+
+                        <p className="text-zinc-300 mb-6 relative z-10 leading-relaxed">
+                            RepoLearn is currently generating a tutorial for <span className="font-mono text-blue-300">{activeJob.repoId.replace("_", "/")}</span>.
+                            <br /><br />
+                            Please wait for it to finish, or stop it to start a new one.
+                        </p>
+
+                        <div className="flex flex-col gap-3 relative z-10">
+                            <Link
+                                href={`/job/${activeJob.id}`}
+                                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-center transition-all hover-lift shadow-lg shadow-blue-900/20"
+                            >
+                                View Progress
+                            </Link>
+                            <Link
+                                href="/"
+                                className="w-full py-3 border border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg text-center transition-all"
+                            >
+                                Go Home
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Overwrite Confirmation Dialog */}
             {showConfirm && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
@@ -90,7 +171,7 @@ export default function NewRepository() {
                                 Cancel
                             </button>
                             <button
-                                onClick={() => { setShowConfirm(false); proceedToJob(); }}
+                                onClick={() => { setShowConfirm(false); proceedToJob(true); }}
                                 className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium transition-colors"
                             >
                                 Overwrite

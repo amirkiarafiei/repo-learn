@@ -40,8 +40,9 @@ To ensure robust, real-time updates and sub-agent differentiation, we utilize La
 *   **Event Routing**: Events are streamed as tuples `(namespace, data)`.
     *   **Main Agent**: `namespace=()` (empty).
     *   **Sub-Agent**: `namespace=('task_tool', 'subagent_name')`.
-*   **Persistence**: For MVP, LangGraph uses in-memory/file-based checkpointing (no database required). State is preserved via pickle files during `langgraph dev` sessions.
-    *   **Reconnection**: The Frontend URL contains a `thread_id` (e.g., `/job/uuid-123`). On page refresh, the frontend reconnects to this thread and hydrates the state from the checkpoint.
+*   **Persistence**: For MVP, LangGraph uses in-memory/file-based checkpointing.
+    *   **Detached Execution**: Starting in v0.3.1, the system uses `client.runs.create()` to initiate server-side runs that persist independently of the client connection.
+    *   **Reconnection (Polling)**: The frontend uses a custom `usePersistentAgent` hook that polls `client.threads.getState()` using a `thread_id`. If a user refreshes or navigates back, the UI hydrates the full state from the server.
     *   **Production**: For production deployments, LangGraph can use Postgres for persistent state storage.
 
 ## 2.3 Error Handling & Resilience
@@ -172,7 +173,7 @@ This section documents how the SRS requirements were realized in the MVP.
 | **7.1 Advanced UI**        | ⚠️ Partial  | IDE implemented, semantic updates deferred        |
 | **7.2 Manager Layer**      | ⏳ Deferred | Supervisor agent                                  |
 | **7.3 Cost Estimation**    | ⏳ Deferred | Token counting, live metrics                      |
-| **7.3 Resumability**       | ⏳ Deferred | Skip completed phases                             |
+| **7.3 Resumability**       | ✅ Complete | Detached server runs (v0.3.1)                     |
 
 ### 8.2 Architecture Deviation: Sidecar vs API Routes
 
@@ -315,6 +316,16 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 | **Speed Mode Prompts**     | Slow development testing     | Brief response mode for agents    |
 | **README & Env Templates** | Difficult onboarding         | Root README & .env.example files  |
 
+### 8.12 v0.3.1 Detached Persistence & Robust Cleanup
+
+| Improvement              | Problem Addressed            | Implementation                     |
+| ------------------------ | ---------------------------- | ---------------------------------- |
+| **Detached Persistence** | UI connection loss kills job | `usePersistentAgent` (runs create) |
+| **Atomic Deep Cleanup**  | Zombie data on restart       | DELETE removes tutorial AND repo   |
+| **Metadata Resilience**  | Missing Visualization link   | Saved immediately on job finish    |
+| **One Job = One Thread** | State pollution/leakage      | UUID isolation for every attempt   |
+
+
 ---
 
 ## 9. Acceptance Criteria Validation
@@ -340,5 +351,5 @@ NEXT_PUBLIC_LANGGRAPH_URL=http://localhost:2024
 
 ---
 
-*Document updated: January 1, 2026 (v0.3.0)*
+*Document updated: January 1, 2026 (v0.3.1)*
 

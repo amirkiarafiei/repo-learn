@@ -2,7 +2,9 @@
 
 import { useStream } from "@langchain/langgraph-sdk/react";
 import type { Message } from "@langchain/langgraph-sdk";
-import { useMemo, useCallback, useState, useRef } from "react";
+import { useMemo, useCallback, useState, useRef, useEffect } from "react";
+// Import JobContext
+import { useJob } from "@/context/JobContext";
 
 // Types for our agent state
 // DeepAgents TodoListMiddleware uses: { status: "pending" | "in_progress" | "completed", content: string }
@@ -45,9 +47,14 @@ type AgentState = Record<string, unknown> & {
 
 export function useAgentStream(options: UseAgentStreamOptions = {}) {
     const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_URL || "http://localhost:2024";
+    const { activeJob, clearJob } = useJob();
 
-    // Thread management - start with null if no initial thread
-    const [threadId, setThreadId] = useState<string | null>(options.initialThreadId ?? null);
+    // Thread management - prefer activeJob thread if it matches initialization intent
+    // If options.initialThreadId is provided, use it. Otherwise fall back to activeJob?.threadId
+    // This allows seamless reconnection
+    const [threadId, setThreadId] = useState<string | null>(
+        options.initialThreadId ?? activeJob?.threadId ?? null
+    );
 
     // Track todos from updates
     const [todos, setTodos] = useState<Todo[]>([]);
@@ -100,7 +107,7 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
             if (update && typeof update === 'object') {
                 const updateObj = update as Record<string, unknown>;
                 if ('todos' in updateObj && Array.isArray(updateObj.todos)) {
-                    console.log("[useAgentStream] Todos updated:", updateObj.todos.length, "items");
+                    // console.log("[useAgentStream] Todos updated:", updateObj.todos.length, "items");
                     setTodos(updateObj.todos as Todo[]);
                 }
             }
@@ -129,6 +136,14 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
             signalCompletion();
         },
     });
+
+    // Explicit stop function
+    const stop = useCallback(() => {
+        console.log("[useAgentStream] Stopping stream and clearing job");
+        stream.stop();
+        clearJob();
+        isSubmittingRef.current = false;
+    }, [stream, clearJob]);
 
     // Transform raw messages to our AgentMessage format and detect subagent activity
     const messages = useMemo((): AgentMessage[] => {
@@ -177,6 +192,7 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
                         if (existing && existing.status === "running") {
                             updated.set(agentName, {
                                 ...existing,
+                                ...updated.get(agentName), // Keep latest if running parallel
                                 status: "done",
                                 completedAt: new Date()
                             });
@@ -273,7 +289,7 @@ export function useAgentStream(options: UseAgentStreamOptions = {}) {
 
         // Actions
         submitAnalysis,
-        stop: stream.stop,
+        stop,
 
         // Raw stream for advanced use
         rawStream: stream,

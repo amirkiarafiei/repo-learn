@@ -1,8 +1,8 @@
 # RepoLearn - Current Progress & Status
 
 **Last Updated:** January 1, 2026
-**Version:** v0.3.0
-**Status:** ✅ Released (v0.3.0)
+**Version:** v0.3.1
+**Status:** ✅ Released (v0.3.1)
 
 ---
 
@@ -101,6 +101,9 @@ RepoLearn is a fully functional MVP demonstrating the **Deep Agent methodology**
 - [x] **View Tutorial Link Fix**: Convert GitHub URL to `owner_repo` format
 - [x] **Agent Prompt Enhancement**: Single `write_todos` call per response (prevents InvalidUpdateError)
 - [x] **Hidden Bugs Audit**: [Full Audit Report](./debugging/hidden_bugs_audit.md)
+- [x] **Background Job Persistence**: Use `client.runs.create` for detached execution (Phase 13)
+- [x] **Deep Physical Cleanup**: Delete both cache and tutorials on Overwrite/Retry.
+
 
 ### Phase 12: Pre-Release Stabilization 🚀 (v0.3.0)
 - [x] **Smart Depth Control**: Select between "Basic" (overview) and "Detailed" (comprehensive) tutorial depth.
@@ -109,6 +112,15 @@ RepoLearn is a fully functional MVP demonstrating the **Deep Agent methodology**
 - [x] **Dev-Speed Optimization**: Implemented "Speed Mode" prompts for sub-agents to accelerate development testing.
 - [x] **Premium Documentation**: Brand new root `README.md` and complete project documentation overhaul.
 - [x] **Frontend Env Template**: Added `.env.example` for the Next.js application.
+
+### Phase 13: Persistence & Detached Execution 🔄 (v0.3.1)
+- [x] **Detached Run Architecture**: Migrated from UI-bound streams to server-side detached runs using `client.runs.create()`.
+- [x] **Persistent Agent Hook**: New `usePersistentAgent` with polling allows navigation away and back without losing progress.
+- [x] **Immutable Thread State**: Enforced "One Job = One Thread" to prevent zombie data and ghost sub-agents.
+- [x] **Deep Metadata Sync**: Fixed race conditions in metadata saving to ensure the Visualization Panel link is always active.
+- [x] **Robust Error Recovery**: Explicit handling for 404 Thread Not Found and filesystem write latency.
+- [x] **Atomic Deep Clean**: Integrated full physical deletion of tutorial and source repository during Retry/Overwrite.
+
 
 ---
 
@@ -293,23 +305,21 @@ Access at: http://localhost:3000
 
 ## 🔮 Future Roadmap (v0.3.0+)
 
-### Completed in v0.3.0 ✅
-- [x] **Smart Depth Control** → Implemented (Basic/Detailed selection)
-- [x] **Granular Storage Control** → Implemented (Delete Code/All)
-- [x] **Universal Lowercase Mapping** → Implemented across UI/Backend
-- [x] **Speed Mode Testing** → Implemented for faster dev iteration
-- [x] **Enhanced Documentation** → New README & Env templates
+### Completed in v0.3.1 🔄
+- [x] **Detached Persistence** → Background jobs continue without browser connection
+- [x] **Deep Cleanup** → Atomic removal of repo/docs on restart
+- [x] **State Resilience** → "One Job = One Thread" state isolation
+- [x] **Metadata Fixes** → Solidified visualization button reliability
 
 ### Planned for v0.4.0 (Roadmap)
 
-| Feature                   | Description                              | Priority |
-| ------------------------- | ---------------------------------------- | -------- |
-| Mermaid Diagram Rendering | Add rehype-mermaid for diagram support   | Medium   |
-| Cost Estimation           | Pre-flight token counting, live metrics  | Low      |
-| Resumability              | Skip already-completed phases on restart | Medium   |
-| Manager/Supervisor Agent  | QA layer above the Deep Agent            | Low      |
-| Edit Mode in Viewer       | Manual correction of generated content   | Low      |
-| Production Deployment     | Docker, Postgres checkpointing           | High     |
+| Feature                   | Description                             | Priority |
+| ------------------------- | --------------------------------------- | -------- |
+| Mermaid Diagram Rendering | Add rehype-mermaid for diagram support  | Medium   |
+| Cost Estimation           | Pre-flight token counting, live metrics | Low      |
+| Manager/Supervisor Agent  | QA layer above the Deep Agent           | Low      |
+| Edit Mode in Viewer       | Manual correction of generated content  | Low      |
+| Production Deployment     | Docker, Postgres checkpointing          | High     |
 
 ---
 
@@ -324,4 +334,4 @@ Access at: http://localhost:3000
 
 ---
 
-*RepoLearn v0.3.0 - Pre-Release Stabilization & Smart Depth Control*
+*RepoLearn v0.3.1 - Detached Background Persistence & Robust Cleanup*
