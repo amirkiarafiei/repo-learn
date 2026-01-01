@@ -23,10 +23,10 @@ function JobPageContent() {
     const [showStopConfirm, setShowStopConfirm] = useState(false);
     const [showRetryConfirm, setShowRetryConfirm] = useState(false);
 
-    // Get mode and params from query
+    // Get mode and params from query (with fallbacks to activeJob for resumption)
     const githubUrl = searchParams.get("url");
-    const audience = (searchParams.get("audience") as "user" | "dev") || "dev";
-    const depth = (searchParams.get("depth") as "basic" | "detailed") || "basic";
+    const audience = (searchParams.get("audience") as "user" | "dev") || activeJob?.audience || "dev";
+    const depth = (searchParams.get("depth") as "basic" | "detailed") || activeJob?.depth || "basic";
     const isReadonly = searchParams.get("readonly") === "true";
     let tutorialId = searchParams.get("tutorial"); // For linking back to tutorial
 
@@ -182,62 +182,63 @@ function JobPageContent() {
     // FIX: Improved redirect logic with retry verification
     // ========================================
     useEffect(() => {
-        // Don't redirect if there's an error or already attempted
-        if (error || redirectAttemptedRef.current) return;
+        // Don't redirect if there's an error or already attempted or readonly
+        if (error || redirectAttemptedRef.current || isReadonly) return;
 
-        if (isComplete && githubUrl && threadId) {
+        // Determine repoId from URL or activeJob
+        const resolvedRepoId = activeJob?.repoId || (() => {
+            if (!githubUrl) return null;
+            const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+            return match ? `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase() : null;
+        })();
+
+        if (isComplete && resolvedRepoId && threadId) {
             // Mark as attempted to prevent duplicate redirects
             redirectAttemptedRef.current = true;
 
             const checkAndRedirect = async () => {
-                // Convert github URL to repo ID format
-                const url = githubUrl as string;
-                const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
-                if (match) {
-                    const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase();
-                    console.log("[JobPage] Verifying tutorial exists for:", repoId);
+                const repoId = resolvedRepoId;
+                console.log("[JobPage] Verifying tutorial exists for:", repoId);
 
-                    // Save metadata WITH threadId immediately to ensure it's available
-                    console.log("[JobPage] Saving thread metadata:", { repoId, threadId, audience });
-                    await saveThreadMetadata(repoId, threadId!, audience);
+                // Save metadata WITH threadId immediately to ensure it's available
+                console.log("[JobPage] Saving thread metadata:", { repoId, threadId, audience });
+                await saveThreadMetadata(repoId, threadId!, audience);
 
-                    // Retry logic: filesystem may have delay
-                    // Increased to 10 attempts * 1s = 10s max wait
-                    let verified = false;
-                    for (let attempt = 0; attempt < 10; attempt++) {
-                        await new Promise(r => setTimeout(r, 1000));
+                // Retry logic: filesystem may have delay
+                // Increased to 10 attempts * 1s = 10s max wait
+                let verified = false;
+                for (let attempt = 0; attempt < 10; attempt++) {
+                    await new Promise(r => setTimeout(r, 1000));
 
-                        try {
-                            const res = await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`);
-                            if (res.ok) {
-                                const data = await res.json();
-                                if (data.files && data.files.length > 0) {
-                                    verified = true;
-                                    console.log(`[JobPage] Tutorial verified on attempt ${attempt + 1}`);
-                                    break;
-                                }
+                    try {
+                        const res = await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.files && data.files.length > 0) {
+                                verified = true;
+                                console.log(`[JobPage] Tutorial verified on attempt ${attempt + 1}`);
+                                break;
                             }
-                        } catch (e) {
-                            console.warn(`[JobPage] Verification attempt ${attempt + 1} failed:`, e);
                         }
-                    }
-
-                    if (!verified) {
-                        console.error("[JobPage] Tutorial verification failed after 3 attempts");
-                        // Don't redirect - stay on job page so user can see what happened
-                        return;
-                    }
-
-                    // Redirect to tutorial
-                    if (!isReadonly) {
-                        console.log("[JobPage] Redirecting to tutorial...");
-                        router.push(`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`);
+                    } catch (e) {
+                        console.warn(`[JobPage] Verification attempt ${attempt + 1} failed:`, e);
                     }
                 }
+
+                if (!verified) {
+                    console.error("[JobPage] Tutorial verification failed after 10 attempts");
+                    // Reset attempt ref so user can try to trigger it again if they want (though it's automatic)
+                    redirectAttemptedRef.current = false;
+                    return;
+                }
+
+                // Redirect to tutorial
+                console.log("[JobPage] Redirecting to tutorial...");
+                router.push(`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`);
             };
             checkAndRedirect();
         }
-    }, [isComplete, githubUrl, threadId, audience, saveThreadMetadata, isReadonly, router, error]);
+    }, [isComplete, githubUrl, activeJob?.repoId, threadId, audience, saveThreadMetadata, isReadonly, router, error]);
 
     // Calculate status
     const status = isReadonly
