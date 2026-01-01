@@ -10,9 +10,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend, CompositeBackend
+from deepagents.backends.protocol import WriteResult, EditResult
 from langchain_openai import ChatOpenAI
 
-from agent.tools import git_clone, get_repo_path, get_tutorial_path
+from agent.tools import git_clone, get_repo_path, get_tutorial_path, complete_tutorial
 from agent.subagents import SUBAGENTS
 
 # Load environment variables
@@ -138,16 +139,30 @@ write_file(f"{tutorial_path}/0_overview.md", content)
 - `read_todos`: Check todo state
 - `task`: Delegate to subagents
 - `git_clone`: Clone a repository
-- `get_repo_path`: Get path to read repository files
-- `get_tutorial_path(url, audience)`: Get path for writing tutorials (MUST call before write_file)
-- `ls`, `read_file`: Read files from repository
+- `get_repo_path`: Get VIRTUAL path to read repository files (e.g., "/owner_repo")
+- `get_tutorial_path(url, audience)`: Get VIRTUAL path for writing tutorials (MUST call before write_file)
+- `ls`, `read_file`: Read files from repository (use the virtual repo path)
 - `write_file`: Write tutorial files (ONLY to tutorial_path)
+- `complete_tutorial`: Mark the tutorial as complete (MUST call before finishing)
+
+## 🏁 How to Finish
+1. Write all tutorial files
+2. Call `complete_tutorial(github_url, audience, "Brief summary of work")`
+3. Then provide your final response to the user.
 
 Be FAST and BRIEF!"""
 
 # Configure backends for path safety
+class ReadOnlyFilesystemBackend(FilesystemBackend):
+    """Prevents write/edit operations on the repositories folder."""
+    def write(self, file_path: str, content: str) -> WriteResult:
+        return WriteResult(error=f"PERMISSION DENIED: Write access not allowed in repository backend for {file_path}. Use /tutorials/ path for your output.")
+
+    def edit(self, file_path: str, old_string: str, new_string: str, replace_all: bool = False) -> EditResult:
+        return EditResult(error=f"PERMISSION DENIED: Edit access not allowed in repository backend for {file_path}. Use /tutorials/ path for your output.")
+
 # Read-only access to cloned repositories
-repos_backend = FilesystemBackend(
+repos_backend = ReadOnlyFilesystemBackend(
     root_dir=str(REPOS_DIR),
     virtual_mode=True,  # Prevents path traversal
     max_file_size_mb=10,
@@ -163,7 +178,7 @@ tutorials_backend = FilesystemBackend(
 # Create the Deep Agent with CompositeBackend for path sandboxing
 graph = create_deep_agent(
     model=model,
-    tools=[git_clone, get_repo_path, get_tutorial_path],
+    tools=[git_clone, get_repo_path, get_tutorial_path, complete_tutorial],
     system_prompt=BRAIN_PROMPT,
     subagents=SUBAGENTS,
     # CompositeBackend: default reads from repos, /tutorials/ route writes to tutorials

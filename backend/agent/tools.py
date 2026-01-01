@@ -5,6 +5,8 @@ Custom tools for the RepoLearn Deep Agent.
 import os
 import subprocess
 import re
+import json
+from datetime import datetime
 from pathlib import Path
 from langchain_core.tools import tool
 
@@ -79,13 +81,13 @@ def get_repo_path(github_url: str) -> str:
         github_url: The full GitHub URL
     
     Returns:
-        The local path where the repository is stored, or an error if not found.
+        The VIRTUAL path (e.g., "/owner_repo") where the repository is stored.
     """
     repo_name = _sanitize_repo_name(github_url)
     target_dir = REPOS_DIR / repo_name
     
     if target_dir.exists():
-        return str(target_dir)
+        return f"/{repo_name}"
     else:
         return f"Repository not found. Please clone it first using git_clone."
 
@@ -146,4 +148,38 @@ def get_tutorial_path(github_url: str, audience: str = "") -> str:
         f"  write_file(\"{virtual_path}/1_getting_started.md\", content)\n\n"
         f"Do NOT use any other path format."
     )
+
+
+@tool
+def complete_tutorial(github_url: str, audience: str, summary: str = "") -> str:
+    """Mark the tutorial as complete. Call this ONLY after you have written ALL files.
+    
+    Args:
+        github_url: The GitHub URL analyzed
+        audience: 'user' or 'dev'
+        summary: A 1-2 sentence summary of the generated tutorial.
+    
+    Returns:
+        A message confirming completion.
+    """
+    repo_name = _sanitize_repo_name(github_url)
+    metadata_path = TUTORIALS_DIR / repo_name / audience / "metadata.json"
+    
+    try:
+        if not metadata_path.exists():
+            return f"Error: Metadata file not found at {metadata_path}. Did you create the tutorial path first?"
+            
+        with open(metadata_path, 'r') as f:
+            metadata = json.load(f)
+            
+        metadata["status"] = "completed"
+        metadata["updatedAt"] = datetime.now().isoformat()
+        metadata["summary"] = summary
+        
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=2)
+            
+        return f"Successfully marked tutorial for {repo_name} ({audience}) as completed."
+    except Exception as e:
+        return f"Error marking tutorial as complete: {str(e)}"
 
