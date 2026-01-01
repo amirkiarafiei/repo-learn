@@ -9,7 +9,7 @@ Built with Deep Agents (hierarchical AI agents) for intelligent codebase underst
 ### Prerequisites
 - Node.js 18+
 - Python 3.12+
-- [LangGraph CLI](https://langchain-ai.github.io/langgraph/tutorials/langgraph-platform/local-server/) (`pip install langgraph-cli[inmem]`)
+- [LangGraph CLI](https://langchain-ai.github.io/langgraph/tutorials/langgraph-platform/local-server/) (`uv tool install langgraph-cli[inmem]`)
 - OpenRouter API key ([get one here](https://openrouter.ai/))
 
 ### 1. Clone & Setup
@@ -23,7 +23,7 @@ cd repo-learn
 
 ```bash
 cd backend
-pip install -e .
+uv sync
 
 # Copy and configure environment
 cp .env.example .env
