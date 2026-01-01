@@ -8,6 +8,7 @@
   --muted-foreground: #a1a1aa;
   --accent: #3b82f6;
   --accent-foreground: #ffffff;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -336,28 +337,48 @@ body {
   animation: slideUpFade 0.2s ease-out;
 }
 
-/* Thin scrollbar for log areas */
-.scrollbar-thin {
+/* Global Scrollbar Reset for Dark Theme */
+* {
   scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
-.scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+*::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  border-radius: 2px;
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 20px !important;
+  border: 1px solid transparent !important;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+*::-webkit-scrollbar-button {
+  display: none !important;
+}
+
+/* Specific overrides for log areas */
+.scrollbar-thin {
+  scrollbar-width: thin !important;
 }
 
 .scrollbar-thumb-zinc-800::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: #27272a !important;
 }
 
 .scrollbar-thumb-blue-900\/50::-webkit-scrollbar-thumb {
-  background: rgba(30, 58, 138, 0.5);
+  background: rgba(30, 58, 138, 0.5) !important;
 }
 
 .scrollbar-track-transparent::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
 }

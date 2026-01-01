@@ -18,7 +18,7 @@ The "Subagent Tool Calls" feature has been implemented using **Option B**.
 
 ### Backend
 1. **Tool Call Store**: Created in-memory store (`backend/agent/tool_call_store.py`) to buffer tool calls.
-2. **Middleware**: Updated middleware (`backend/agent/middleware.py`) to write to this store.
+2. **Middleware**: Updated middleware (`backend/agent/middleware.py`) to intercept `ToolCallRequest` and correctly extract tool names and arguments (fixed "unknown" bug).
 3. **API**: Added Custom API (`backend/agent/webapp.py`) exposing `/tool-calls/{thread_id}`.
 4. **Persistence**: Updated `complete_tutorial` tool (`backend/agent/tools.py`) to save tool logs to `metadata.json`.
 

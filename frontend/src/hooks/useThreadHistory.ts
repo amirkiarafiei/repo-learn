@@ -56,7 +56,7 @@ function extractBriefArgs(toolName: string, args: Record<string, unknown>): stri
     }
 }
 
-// Helper: Ensure subagent has toolCalls array (backwards compat for old snapshots)
+// Helper: Ensure subagent has toolCalls array and hydrated dates (backwards compat for old snapshots)
 function ensureSubagentToolCalls(subagent: Partial<SubagentStatus>): SubagentStatus {
     return {
         name: subagent.name || "unknown",
@@ -65,7 +65,10 @@ function ensureSubagentToolCalls(subagent: Partial<SubagentStatus>): SubagentSta
         startedAt: subagent.startedAt ? new Date(subagent.startedAt) : undefined,
         completedAt: subagent.completedAt ? new Date(subagent.completedAt) : undefined,
         activityLogs: subagent.activityLogs || [],
-        toolCalls: subagent.toolCalls || [], // Ensure toolCalls exists
+        toolCalls: (subagent.toolCalls || []).map(tc => ({
+            ...tc,
+            timestamp: tc.timestamp ? new Date(tc.timestamp) : new Date()
+        })),
     };
 }
 
@@ -229,9 +232,11 @@ export function useThreadHistory(threadId: string | null, repoId?: string | null
                 // Sort all tool calls by timestamp
                 for (const agent of subagentsMap.values()) {
                     if (agent.toolCalls.length > 0) {
-                        agent.toolCalls.sort((a, b) =>
-                            (a.timestamp?.getTime() || 0) - (b.timestamp?.getTime() || 0)
-                        );
+                        agent.toolCalls.sort((a, b) => {
+                            const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : 0;
+                            const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : 0;
+                            return timeA - timeB;
+                        });
                     }
                 }
             }
