@@ -162,16 +162,7 @@ export function GridPanel({ subagents, isLoading }: GridPanelProps) {
                                                 isDone={isDone}
                                             />
 
-                                            {/* Timestamp footer */}
-                                            {agent.startedAt && (
-                                                <div className={`mt-3 pt-2 border-t ${isDone ? "border-zinc-800/50" : "border-blue-500/10"} flex items-center justify-end`}>
-                                                    <span className="text-[10px] text-zinc-600 font-mono">
-                                                        {agent.startedAt instanceof Date
-                                                            ? agent.startedAt.toLocaleTimeString()
-                                                            : new Date(agent.startedAt).toLocaleTimeString()}
-                                                    </span>
-                                                </div>
-                                            )}
+
                                         </div>
                                     )}
                                 </div>
