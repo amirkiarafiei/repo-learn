@@ -11,8 +11,12 @@ export default function NewRepository() {
     const [depth, setDepth] = useState<"basic" | "detailed">("basic");
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    // Overwrite confirmation state
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [existingTutorial, setExistingTutorial] = useState<string | null>(null);
+    const [checkError, setCheckError] = useState<string | null>(null);
+
+    const proceedToJob = () => {
         setIsLoading(true);
         const jobId = crypto.randomUUID();
         const params = new URLSearchParams({
@@ -23,8 +27,79 @@ export default function NewRepository() {
         router.push(`/job/${jobId}?${params.toString()}`);
     };
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCheckError(null);
+
+        // Validate URL format
+        const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
+        if (!match) {
+            setCheckError("Please enter a valid GitHub URL");
+            return;
+        }
+
+        const repoId = `${match[1]}_${match[2]}`.toLowerCase().replace(/\.git$/, "");
+
+        // Pre-flight check: does this EXACT tutorial (repo + SAME audience) exist?
+        try {
+            setIsLoading(true);
+            const res = await fetch(`/api/tutorials/${repoId}?audience=${audience}`);
+            setIsLoading(false);
+
+            if (res.ok) {
+                const data = await res.json();
+                // CRITICAL: Only show overwrite dialog if the SAME audience exists
+                // The API may return a different audience as fallback - ignore those
+                if (data.files && data.files.length > 0 && data.audience === audience) {
+                    setExistingTutorial(repoId.replace(/_/g, "/"));
+                    setShowConfirm(true);
+                    return;
+                }
+            }
+        } catch (err) {
+            setIsLoading(false);
+            // Network error - warn but allow proceeding
+            console.warn("Could not check for existing tutorial:", err);
+        }
+
+        // No existing tutorial, proceed directly
+        proceedToJob();
+    };
+
     return (
         <main className="min-h-screen flex flex-col">
+            {/* Overwrite Confirmation Dialog */}
+            {showConfirm && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-md shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="text-2xl">⚠️</span>
+                            <h3 className="text-lg font-semibold text-white">Tutorial Already Exists</h3>
+                        </div>
+                        <p className="text-zinc-400 mb-6">
+                            A <span className="text-blue-400 font-medium">{audience === "user" ? "user-friendly" : "developer"}</span> tutorial
+                            for <span className="font-mono text-white bg-zinc-800 px-1.5 py-0.5 rounded">{existingTutorial}</span> already exists.
+                            <br /><br />
+                            Continuing will <span className="text-red-400 font-medium">overwrite</span> the existing tutorial.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => { setShowConfirm(false); setIsLoading(false); }}
+                                className="px-4 py-2 rounded-lg border border-zinc-600 text-zinc-300 hover:bg-zinc-800 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => { setShowConfirm(false); proceedToJob(); }}
+                                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium transition-colors"
+                            >
+                                Overwrite
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <header className="border-b border-zinc-800/50 px-4 py-2 bg-black sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -68,6 +143,13 @@ export default function NewRepository() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Error Message */}
+                        {checkError && (
+                            <div className="p-4 bg-red-900/20 border border-red-800 rounded-xl text-red-400 text-sm">
+                                {checkError}
+                            </div>
+                        )}
+
                         {/* GitHub URL */}
                         <div className="space-y-2">
                             <label htmlFor="url" className="block text-sm font-medium text-zinc-300">
@@ -160,7 +242,7 @@ export default function NewRepository() {
                             {isLoading ? (
                                 <>
                                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                    Starting...
+                                    Checking...
                                 </>
                             ) : (
                                 <>
@@ -177,3 +259,4 @@ export default function NewRepository() {
         </main>
     );
 }
+

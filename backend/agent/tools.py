@@ -91,17 +91,59 @@ def get_repo_path(github_url: str) -> str:
 
 
 @tool
-def get_tutorial_path(github_url: str, audience: str = "dev") -> str:
-    """Get the local filesystem path for tutorial output.
+def get_tutorial_path(github_url: str, audience: str = "") -> str:
+    """Get the REQUIRED path for saving tutorial files.
+    
+    You MUST call this BEFORE writing any tutorial files.
+    You MUST use the returned path as the prefix for ALL write_file calls.
     
     Args:
-        github_url: The full GitHub URL
-        audience: Either 'user' or 'dev' (default: 'dev')
+        github_url: The GitHub URL being analyzed
+        audience: REQUIRED - 'user' or 'dev' (check user message for 'Target audience: X')
     
     Returns:
-        The path where tutorials should be saved.
+        The virtual path for writing tutorials. Use this EXACTLY in write_file calls.
+    
+    Example:
+        path = get_tutorial_path("https://github.com/a/b", "dev")
+        # Returns: "/tutorials/a_b/dev"
+        write_file(f"{path}/0_overview.md", content)
     """
+    # Validate audience - STRICT
+    if not audience:
+        return (
+            "ERROR: 'audience' parameter is REQUIRED.\n\n"
+            "Look at the user message for 'Target audience: user' or 'Target audience: dev'\n"
+            "Then call: get_tutorial_path(url, 'user') or get_tutorial_path(url, 'dev')"
+        )
+    
+    audience = audience.lower().strip()
+    if audience not in ("user", "dev"):
+        return (
+            f"ERROR: audience must be 'user' or 'dev', got '{audience}'.\n\n"
+            "Check the user message for 'Target audience: X' and try again."
+        )
+    
+    # Sanitize repo name
     repo_name = _sanitize_repo_name(github_url)
+    if not repo_name:
+        return f"ERROR: Could not parse repository from URL: {github_url}"
+    
+    # Create directory on real filesystem
     tutorial_dir = TUTORIALS_DIR / repo_name / audience
-    tutorial_dir.mkdir(parents=True, exist_ok=True)
-    return str(tutorial_dir)
+    try:
+        tutorial_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        return f"ERROR: Failed to create tutorial directory: {e}"
+    
+    # Return virtual path for CompositeBackend routing
+    virtual_path = f"/tutorials/{repo_name}/{audience}"
+    
+    return (
+        f"Tutorial output path: {virtual_path}\n\n"
+        f"You MUST use this path for ALL write_file calls:\n"
+        f"  write_file(\"{virtual_path}/0_overview.md\", content)\n"
+        f"  write_file(\"{virtual_path}/1_getting_started.md\", content)\n\n"
+        f"Do NOT use any other path format."
+    )
+

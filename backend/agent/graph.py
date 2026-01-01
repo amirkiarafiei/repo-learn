@@ -2,14 +2,14 @@
 RepoLearn Deep Agent Graph
 
 This module creates the main DeepAgent for analyzing codebases and generating tutorials.
-Phase 5: Added subagent integration for specialized analysis and documentation tasks.
+Uses CompositeBackend to sandbox file operations: read from repos, write to tutorials only.
 """
 
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 from deepagents import create_deep_agent
-from deepagents.backends import FilesystemBackend
+from deepagents.backends import FilesystemBackend, CompositeBackend
 from langchain_openai import ChatOpenAI
 
 from agent.tools import git_clone, get_repo_path, get_tutorial_path
@@ -21,10 +21,11 @@ load_dotenv()
 # Paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 REPOS_DIR = DATA_DIR / "repositories"
+TUTORIALS_DIR = DATA_DIR / "tutorials"
 
 # Configure OpenRouter as the LLM provider
 model = ChatOpenAI(
-    model=os.getenv("OPENROUTER_MODEL", "z-ai/glm-4.5-air:free"),
+    model=os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-001"),
     openai_api_base="https://openrouter.ai/api/v1",
     openai_api_key=os.getenv("OPENROUTER_API_KEY"),
     default_headers={
@@ -41,6 +42,34 @@ BRAIN_PROMPT = """You are RepoLearn Brain, the main orchestrator AI that helps d
 - Skip deep analysis - give quick overviews only
 - Complete tasks quickly, don't overthink
 - Still use todos and subagents (required for the system to work)
+
+## ⚠️ CRITICAL: File Path Rules (READ CAREFULLY)
+
+### Step 1: Parse the Request
+The user message contains:
+- A GitHub URL to analyze
+- "Target audience: user" OR "Target audience: dev" - EXTRACT THIS VALUE
+
+### Step 2: Get Tutorial Output Path (MANDATORY)
+BEFORE writing ANY tutorial file, you MUST call:
+```python
+tutorial_path = get_tutorial_path(github_url, audience)
+# Example: get_tutorial_path("https://github.com/owner/repo", "dev")
+# Returns: "/tutorials/owner_repo/dev"
+```
+
+### Step 3: Write Files to THAT Path
+ALL tutorial `write_file` calls MUST use the tutorial_path:
+```python
+write_file(f"{tutorial_path}/0_overview.md", content)  # ✅ CORRECT
+write_file("/tutorials/owner_repo/0_overview.md", content)  # ❌ WRONG - missing audience
+write_file("data/tutorials/owner_repo/dev/file.md", content)  # ❌ WRONG - wrong format
+```
+
+### What Happens If You Use Wrong Path
+- Writing outside `/tutorials/` → ERROR: Permission denied
+- Writing without audience subfolder → ERROR: Invalid path
+- The system will reject incorrectly placed files
 
 ## CRITICAL: Always Use Todo List
 
@@ -66,16 +95,18 @@ When given a GitHub repository URL:
 Call `write_todos` with a SHORT plan:
 ```
 [
-  {"content": "Clone and explore repo", "status": "pending"},
+  {"content": "Clone repo and get tutorial path", "status": "pending"},
   {"content": "DELEGATE: Quick code overview (code-analyzer)", "status": "pending"},
   {"content": "DELEGATE: Write brief docs (doc-writer)", "status": "pending"},
   {"content": "Create overview document", "status": "pending"}
 ]
 ```
 
-### Phase 2: Clone & Quick Look
-- Clone with `git_clone`, do a quick `ls`
-- Mark todo as completed
+### Phase 2: Clone & Get Paths
+1. Clone with `git_clone(url)`
+2. Get repo path: `repo_path = get_repo_path(url)`
+3. **IMPORTANT**: Get tutorial path: `tutorial_path = get_tutorial_path(url, audience)`
+4. Mark todo as completed
 
 ### Phase 3: Delegate to code-analyzer (REQUIRED)
 Quick delegation:
@@ -96,25 +127,49 @@ task(
 ```
 
 ### Phase 5: Create Brief Overview
-Write a SHORT `0_overview.md` (just the essentials, no fluff)
+Use the tutorial_path from Step 2:
+```python
+write_file(f"{tutorial_path}/0_overview.md", content)
+```
 
 ## Available Tools
 
 - `write_todos`: Track progress (call first!)
 - `read_todos`: Check todo state
 - `task`: Delegate to subagents
-- `git_clone`, `get_repo_path`, `get_tutorial_path`: Repo tools
-- `ls`, `read_file`, `write_file`, `edit_file`: File operations
+- `git_clone`: Clone a repository
+- `get_repo_path`: Get path to read repository files
+- `get_tutorial_path(url, audience)`: Get path for writing tutorials (MUST call before write_file)
+- `ls`, `read_file`: Read files from repository
+- `write_file`: Write tutorial files (ONLY to tutorial_path)
 
 Be FAST and BRIEF!"""
 
-# Create the Deep Agent with subagents and filesystem backend
+# Configure backends for path safety
+# Read-only access to cloned repositories
+repos_backend = FilesystemBackend(
+    root_dir=str(REPOS_DIR),
+    virtual_mode=True,  # Prevents path traversal
+    max_file_size_mb=10,
+)
+
+# Read-write access to tutorials
+tutorials_backend = FilesystemBackend(
+    root_dir=str(TUTORIALS_DIR),
+    virtual_mode=True,
+    max_file_size_mb=5,
+)
+
+# Create the Deep Agent with CompositeBackend for path sandboxing
 graph = create_deep_agent(
     model=model,
     tools=[git_clone, get_repo_path, get_tutorial_path],
     system_prompt=BRAIN_PROMPT,
-    # Subagents for specialized tasks
     subagents=SUBAGENTS,
-    # FilesystemBackend allows the agent to read/write to the data directory
-    backend=FilesystemBackend(root_dir=str(DATA_DIR)),
+    # CompositeBackend: default reads from repos, /tutorials/ route writes to tutorials
+    backend=CompositeBackend(
+        default=repos_backend,
+        routes={"/tutorials/": tutorials_backend},
+    ),
 )
+

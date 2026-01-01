@@ -35,24 +35,29 @@ export async function GET(
         // Check for audience subdirectory first (user/ or dev/)
         const audienceDir = path.join(tutorialDir, audience);
         let targetDir = tutorialDir;
+        let actualAudience = audience;  // Track what we actually found
 
         try {
             const audienceEntries = await readdir(audienceDir);
             if (audienceEntries.some(f => f.endsWith(".md"))) {
                 targetDir = audienceDir;
+                actualAudience = audience;  // Exact match
+            } else {
+                // Requested audience folder exists but has no .md files
+                // Return 404 - don't fallback
+                return NextResponse.json(
+                    { error: `No tutorial files found for ${audience} audience` },
+                    { status: 404 }
+                );
             }
         } catch {
-            // Fallback: try opposite audience or main dir
-            const oppositeAudience = audience === "user" ? "dev" : "user";
-            const oppositeDir = path.join(tutorialDir, oppositeAudience);
-            try {
-                const oppEntries = await readdir(oppositeDir);
-                if (oppEntries.some(f => f.endsWith(".md"))) {
-                    targetDir = oppositeDir;
-                }
-            } catch {
-                // Use main dir
-            }
+            // Requested audience folder doesn't exist at all
+            // For the overwrite check, this means the tutorial doesn't exist
+            // Return 404 - don't silently fallback to opposite audience
+            return NextResponse.json(
+                { error: `Tutorial not found for ${audience} audience` },
+                { status: 404 }
+            );
         }
 
         const entries = await readdir(targetDir, { withFileTypes: true });
@@ -77,7 +82,7 @@ export async function GET(
         return NextResponse.json({
             id,
             name: id.replace(/_/g, "/"),
-            audience,
+            audience: actualAudience,  // Return what we ACTUALLY found
             files,
             contents,
         });

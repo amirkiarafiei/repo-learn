@@ -71,6 +71,21 @@ function JobPageContent() {
         }
     }, []);
 
+    // Pre-create tutorial directory before analysis starts
+    const ensureTutorialDir = useCallback(async (repoId: string, aud: "user" | "dev") => {
+        try {
+            await fetch(`/api/tutorials/${repoId}/metadata`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ audience: aud, status: "generating", startedAt: new Date().toISOString() }),
+            });
+            console.log("[JobPage] Pre-created tutorial directory for:", repoId, aud);
+        } catch (err) {
+            console.error("Failed to create tutorial directory:", err);
+            // Non-fatal - agent might still work
+        }
+    }, []);
+
     // Auto-start analysis when page loads with a URL (live mode only)
     const { submitAnalysis, isLoading: streamLoading } = liveStream;
 
@@ -83,13 +98,23 @@ function JobPageContent() {
         // Synchronous guard using ref - prevents race condition
         if (!hasStartedRef.current && !streamLoading) {
             hasStartedRef.current = true;
-            console.log("[JobPage] Starting analysis for:", githubUrl, "depth:", depth);
-            submitAnalysis(githubUrl, audience, depth);
+
+            // Pre-create tutorial directory before starting analysis
+            const startAnalysis = async () => {
+                const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+                if (match) {
+                    const repoId = `${match[1]}_${match[2]}`.toLowerCase().replace(/\.git$/, "");
+                    await ensureTutorialDir(repoId, audience);
+                }
+                console.log("[JobPage] Starting analysis for:", githubUrl, "depth:", depth);
+                submitAnalysis(githubUrl, audience, depth);
+            };
+            startAnalysis();
         }
-    }, [isReadonly, githubUrl, streamLoading, submitAnalysis, audience, depth, isComplete]);
+    }, [isReadonly, githubUrl, streamLoading, submitAnalysis, audience, depth, isComplete, ensureTutorialDir]);
 
     // ========================================
-    // FIX: Improved redirect logic with ref guard
+    // FIX: Improved redirect logic with retry verification
     // ========================================
     useEffect(() => {
         // Don't redirect if there's an error or already attempted
@@ -105,22 +130,41 @@ function JobPageContent() {
                 const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
                 if (match) {
                     const repoId = `${match[1]}_${match[2]}`.replace(/\.git$/, "").toLowerCase();
-                    console.log("[JobPage] Saving metadata and checking tutorial for:", repoId);
+                    console.log("[JobPage] Verifying tutorial exists for:", repoId);
 
-                    // Save metadata first
+                    // Retry logic: filesystem may have delay
+                    let verified = false;
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        await new Promise(r => setTimeout(r, 500 * (attempt + 1))); // 500ms, 1s, 1.5s
+
+                        try {
+                            const res = await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`);
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.files && data.files.length > 0) {
+                                    verified = true;
+                                    console.log(`[JobPage] Tutorial verified on attempt ${attempt + 1}`);
+                                    break;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`[JobPage] Verification attempt ${attempt + 1} failed:`, e);
+                        }
+                    }
+
+                    if (!verified) {
+                        console.error("[JobPage] Tutorial verification failed after 3 attempts");
+                        // Don't redirect - stay on job page so user can see what happened
+                        return;
+                    }
+
+                    // Save metadata WITH threadId (only after verification)
                     await saveThreadMetadata(repoId, liveStream.threadId!, audience);
 
-                    // Check if tutorial actually exists before redirecting
-                    try {
-                        const res = await fetch(`/api/tutorials/${encodeURIComponent(repoId)}?audience=${audience}`);
-                        if (res.ok && !isReadonly) {
-                            console.log("[JobPage] Tutorial found, redirecting...");
-                            router.push(`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`);
-                        } else {
-                            console.error("[JobPage] Tutorial not found. Status:", res.status);
-                        }
-                    } catch (e) {
-                        console.error("[JobPage] Error checking tutorial existence:", e);
+                    // Redirect to tutorial
+                    if (!isReadonly) {
+                        console.log("[JobPage] Redirecting to tutorial...");
+                        router.push(`/tutorial/${encodeURIComponent(repoId)}?audience=${audience}`);
                     }
                 }
             };

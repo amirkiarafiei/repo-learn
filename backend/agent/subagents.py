@@ -26,6 +26,11 @@ code_analyzer = {
 - Read 1-2 files max, then summarize
 - No code snippets unless essential
 
+## 🔒 PATH SAFETY
+- You can READ files from the repository using `read_file` and `ls`
+- You CANNOT write files - return your analysis to the main agent
+- The main agent handles all file output
+
 ## Quick Process
 1. Read the target file(s) with `read_file`
 2. Return a SHORT summary (max 5-10 lines total)
@@ -58,9 +63,15 @@ doc_writer = {
 - One code example max
 - Skip diagrams unless critical
 
+## 🔒 PATH SAFETY
+- You can READ files from the repository using `read_file` and `ls`
+- You CANNOT write files directly - return documentation content to the main agent
+- The main agent handles saving files to the correct tutorial path
+
 ## Quick Process
 1. Check what info is available
 2. Write a SHORT, focused doc
+3. Return the content (main agent will save it)
 
 ## Output Format
 - Keep it under 10 lines
