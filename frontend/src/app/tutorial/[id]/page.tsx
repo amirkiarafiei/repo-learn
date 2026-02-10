@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import TabBar from "@/components/ide/TabBar";
 import CodeViewer from "@/components/ide/CodeViewer";
+import MermaidDiagram from "@/components/MermaidDiagram";
 
 interface TutorialData {
     id: string;
@@ -237,6 +238,13 @@ function TutorialPageContent() {
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
+                                        code: ({ className, children, ...props }) => {
+                                            const match = /language-(\w+)/.exec(className || "");
+                                            if (match && match[1] === "mermaid") {
+                                                return <MermaidDiagram chart={String(children).replace(/\n$/, "")} />;
+                                            }
+                                            return <code className={className} {...props}>{children}</code>;
+                                        },
                                         a: ({ href, children }) => {
                                             const isExternal = href?.startsWith("http") || href?.startsWith("https");
                                             const isAnchor = href?.startsWith("#");

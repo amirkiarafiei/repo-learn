@@ -382,3 +382,64 @@ body {
 .scrollbar-track-transparent::-webkit-scrollbar-track {
   background: transparent !important;
 }
+
+/* ===== MERMAID DIAGRAMS ===== */
+
+.mermaid-container {
+  background: rgba(39, 39, 42, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 1.5rem 1rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mermaid-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Loading state */
+.mermaid-loading {
+  gap: 0.5rem;
+  color: #a1a1aa;
+  font-size: 0.8rem;
+  padding: 2rem 1rem;
+}
+
+.mermaid-loading-dot {
+  width: 6px;
+  height: 6px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Error state */
+.mermaid-error {
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.mermaid-error-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+}
+
+.mermaid-fallback-code {
+  font-size: 0.8rem;
+  color: #71717a;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  width: 100%;
+}
