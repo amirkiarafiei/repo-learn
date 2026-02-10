@@ -389,17 +389,15 @@ body {
   background: rgba(39, 39, 42, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
-  padding: 1.5rem 1rem;
   margin: 1.5rem 0;
-  overflow-x: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
 }
 
 .mermaid-container svg {
-  max-width: 100%;
-  height: auto;
+  display: block;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain;
 }
 
 /* Loading state */
