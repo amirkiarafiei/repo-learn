@@ -1,8 +1,39 @@
 # RepoLearn
 
-**AI-powered tutorials from any codebase** — Give RepoLearn a GitHub URL, watch it analyze the code in real-time, and get beginner-friendly tutorials tailored for users or developers.
+**Deep Agent Tutorials with Full Observability** — Give RepoLearn a GitHub URL and watch a transparent, hierarchical team of agents explore and analyze the codebase in real-time. Our advanced **Deep Agent Visualization Dashboard** reveals the agents' thoughts, planning, and actions as they generate tutorials.
 
-Built with Deep Agents (hierarchical AI agents) for intelligent codebase understanding.
+Built with **Radical Transparency** and **Agents 2.0** for intelligent codebase understanding.
+
+### Dashboard & Workflow
+
+<table width="100%">
+  <tr>
+    <td width="50%" align="center">
+      <img src="assets/add_repo.png" alt="Add Repository" width="100%"/>
+      <br/><b>Figure 1:</b> <b>Entry Point.</b> Initiate tutorial generation by providing any public GitHub repository URL.
+    </td>
+    <td width="50%" align="center">
+      <img src="assets/main.png" alt="Main Dashboard" width="100%"/>
+      <br/><b>Figure 2:</b> <b>Tutorial Library.</b> The main landing page showcasing the collection of generated tutorials as interactive cards.
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/viz_begin.png" alt="Visualization Start" width="100%"/>
+      <br/><b>Figure 3:</b> <b>Analysis Inception.</b> The initial phase of the visualization dashboard where planning begins.
+    </td>
+    <td align="center">
+      <img src="assets/viz_continue.png" alt="Visualization Progress" width="100%"/>
+      <br/><b>Figure 4:</b> <b>Multidimensional Observability.</b> Radical transparency across the four agentic pillars: Spatial, Hierarchical, Temporal, and Cognitive.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="assets/results.png" alt="Final Results" width="100%"/>
+      <br/><b>Figure 5:</b> <b>Artifact Generation.</b> The final output: high-fidelity, dual-audience tutorials formatted in Markdown.
+    </td>
+  </tr>
+</table>
 
 ## Quick Start
 
@@ -66,12 +97,23 @@ Alternatively, run both services at once (requires `gnome-terminal` or `xterm`):
 - 📁 **Interactive IDE** — Browse source code with syntax highlighting
 - 📤 **Export to Markdown/PDF** — Download tutorials as zip archives
 
-## Documentation
+## Research
 
-- [Current Progress & Architecture](docs/current_progress.md)
-- [DeepAgent Q&A Reference](docs/deepagent_qa.md)
-- [Design & Requirements](docs/design/design_srs.md)
+This repository contains the official implementation for our research on **Automated Codebase Comprehension**. The tool demonstrates how hierarchical Deep Agents can autonomously navigate and explain complex repositories while maintaining full transparency through our real-time visualization dashboard.
 
 ## License
 
 MIT
+
+## Citation
+
+If you use this work in your research, please cite:
+
+```bibtex
+@article{rafiei2026repolearn,
+  title={RepoLearn: Automated Codebase Comprehension through Multidimensional Deep Agent Observability},
+  author={Rafiei, Amirikia},
+  journal={arXiv preprint},
+  year={2026}
+}
+```
