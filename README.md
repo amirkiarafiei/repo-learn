@@ -1,12 +1,13 @@
 # RepoLearn
 
-**Deep Agent Tutorials with Full Observability** — Give RepoLearn a GitHub URL and watch a transparent, hierarchical team of agents explore and analyze the codebase in real-time. Our advanced **Deep Agent Visualization Dashboard** reveals the agents' thoughts, planning, and actions as they generate tutorials.
+This repository contains the official implementation of the paper **"Visualizing Deep Agents in Long-Horizon Tasks: Towards Explainable and Trustworthy Agentic AI"**.
 
-Built with **Radical Transparency** and **Agents 2.0** for intelligent codebase understanding.
+In this work, we propose a **4D visualization** framework (Temporal, Cognitive, Hierarchical, and Spatial) designed to make autonomous Deep Agents radically observable. We integrated this dashboard into **RepoLearn**, a tool that accepts any GitHub repository URL and autonomously generates comprehensive markdown tutorials to onboard both users and developers.
 
 ## Demo Video
 
 [![RepoLearn Demo](https://img.youtube.com/vi/s3U6E9o94gk/0.jpg)](https://www.youtube.com/watch?v=s3U6E9o94gk)
+
 *Watch the RepoLearn Deep Agent in action.*
 
 ## Quick Start
