@@ -4,6 +4,14 @@ This repository contains the official implementation of the paper **"Visualizing
 
 In this work, we propose a **4D visualization** framework (Temporal, Cognitive, Hierarchical, and Spatial) designed to make autonomous Deep Agents radically observable. We integrated this dashboard into **RepoLearn**, a tool that accepts any GitHub repository URL and autonomously generates comprehensive markdown tutorials to onboard both users and developers.
 
+## Features
+
+- 🧠 **Deep Agent Architecture** — Hierarchical AI agents for intelligent analysis
+- 📊 **Real-Time Visualization** — Watch the agent think and plan live
+- 📝 **Dual Audience Mode** — Tutorials for end-users or developers
+- 📁 **Interactive IDE** — Browse source code with syntax highlighting
+- 📤 **Export to Markdown/PDF** — Download tutorials as zip archives
+
 ## Demo Video
 
 <div align="center">
@@ -68,7 +76,7 @@ Alternatively, run both services at once (requires `gnome-terminal` or `xterm`):
 ./run.sh
 ```
 
-### Dashboard & Workflow
+## Screenshots
 
 <table width="100%">
   <tr>
@@ -99,17 +107,6 @@ Alternatively, run both services at once (requires `gnome-terminal` or `xterm`):
   </tr>
 </table>
 
-## Features
-
-- 🧠 **Deep Agent Architecture** — Hierarchical AI agents for intelligent analysis
-- 📊 **Real-Time Visualization** — Watch the agent think and plan live
-- 📝 **Dual Audience Mode** — Tutorials for end-users or developers
-- 📁 **Interactive IDE** — Browse source code with syntax highlighting
-- 📤 **Export to Markdown/PDF** — Download tutorials as zip archives
-
-## Research
-
-This repository contains the official implementation for our research on **Automated Codebase Comprehension**. The tool demonstrates how hierarchical Deep Agents can autonomously navigate and explain complex repositories while maintaining full transparency through our real-time visualization dashboard.
 
 ## License
 
