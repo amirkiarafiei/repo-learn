@@ -8,29 +8,29 @@ Built with **Radical Transparency** and **Agents 2.0** for intelligent codebase 
 
 <table width="100%">
   <tr>
-    <td width="50%" align="center">
+    <td width="33%" align="center">
       <img src="assets/add_repo.png" alt="Add Repository" width="100%"/>
       <br/><b>Figure 1:</b> <b>Entry Point.</b> Initiate tutorial generation by providing any public GitHub repository URL.
     </td>
-    <td width="50%" align="center">
+    <td width="33%" align="center">
       <img src="assets/main.png" alt="Main Dashboard" width="100%"/>
       <br/><b>Figure 2:</b> <b>Tutorial Library.</b> The main landing page showcasing the collection of generated tutorials as interactive cards.
     </td>
+    <td width="33%" align="center">
+      <img src="assets/results.png" alt="Final Results" width="100%"/>
+      <br/><b>Figure 5:</b> <b>Artifact Generation.</b> The final output: high-fidelity, dual-audience tutorials formatted in Markdown.
+    </td>
   </tr>
   <tr>
-    <td align="center">
+    <td colspan="3" align="center">
       <img src="assets/viz_begin.png" alt="Visualization Start" width="100%"/>
       <br/><b>Figure 3:</b> <b>Analysis Inception.</b> The initial phase of the visualization dashboard where planning begins.
     </td>
-    <td align="center">
-      <img src="assets/viz_continue.png" alt="Visualization Progress" width="100%"/>
-      <br/><b>Figure 4:</b> <b>Multidimensional Observability.</b> Radical transparency across the four agentic pillars: Spatial, Hierarchical, Temporal, and Cognitive.
-    </td>
   </tr>
   <tr>
-    <td colspan="2" align="center">
-      <img src="assets/results.png" alt="Final Results" width="100%"/>
-      <br/><b>Figure 5:</b> <b>Artifact Generation.</b> The final output: high-fidelity, dual-audience tutorials formatted in Markdown.
+    <td colspan="3" align="center">
+      <img src="assets/viz_continue.png" alt="Visualization Progress" width="100%"/>
+      <br/><b>Figure 4:</b> <b>Multidimensional Observability.</b> Radical transparency across the four agentic pillars: Spatial, Hierarchical, Temporal, and Cognitive.
     </td>
   </tr>
 </table>
