@@ -6,9 +6,13 @@ In this work, we propose a **4D visualization** framework (Temporal, Cognitive, 
 
 ## Demo Video
 
-[![RepoLearn Demo](https://img.youtube.com/vi/s3U6E9o94gk/0.jpg)](https://www.youtube.com/watch?v=s3U6E9o94gk)
+<div align="center">
+  
+[![RepoLearn Demo - Click to Watch](https://img.youtube.com/vi/s3U6E9o94gk/maxresdefault.jpg)](https://www.youtube.com/watch?v=s3U6E9o94gk)
 
-*Watch the RepoLearn Deep Agent in action.*
+**▶️ Click the image above to watch the full demo on YouTube**
+
+</div>
 
 ## Quick Start
 
