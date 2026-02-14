@@ -1,5 +1,17 @@
 # RepoLearn
 
+<p align="center">
+  <a href="https://deepwiki.com/amirkiarafiei/repo-learn">
+    <img src="https://deepwiki.com/badge.svg" alt="DeepWiki Documentation">
+  </a>
+  <a href="https://www.youtube.com/watch?v=s3U6E9o94gk">
+    <img src="https://img.shields.io/badge/YouTube-Video_Demo-red?style=flat-square&logo=youtube" alt="Video Demo">
+  </a>
+  <a href="https://arxiv.org/abs/2602.12654">
+    <img src="https://img.shields.io/badge/arXiv-2602.12654-b31b1b?style=flat-square&logo=arxiv" alt="Paper">
+  </a>
+</p>
+
 This repository contains the official implementation of the paper **"Visualizing Deep Agents in Long-Horizon Tasks: Towards Explainable and Trustworthy Agentic AI"**.
 
 In this work, we propose a **4D visualization** framework (Temporal, Cognitive, Hierarchical, and Spatial) designed to make autonomous Deep Agents radically observable. We integrated this dashboard into **RepoLearn**, a tool that accepts any GitHub repository URL and autonomously generates comprehensive markdown tutorials to onboard both users and developers.
