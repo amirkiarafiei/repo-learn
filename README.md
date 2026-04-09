@@ -26,12 +26,11 @@ In this work, we propose a **4D visualization** framework (Temporal, Cognitive, 
 
 ## Demo Video
 
-<div align="center">
-
-[![Watch the RepoLearn Demo](assets/video_play.png)](https://www.youtube.com/watch?v=s3U6E9o94gk)
-
-
-</div>
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=s3U6E9o94gk">
+    <img src="assets/video_play.png" alt="Watch the RepoLearn Demo" width="800">
+  </a>
+</p>
 
 ## Quick Start
 
