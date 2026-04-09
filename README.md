@@ -7,8 +7,8 @@
   <a href="https://www.youtube.com/watch?v=s3U6E9o94gk">
     <img src="https://img.shields.io/badge/YouTube-Video_Demo-red?style=flat-square&logo=youtube" alt="Video Demo">
   </a>
-  <a href="https://arxiv.org/abs/2602.12654">
-    <img src="https://img.shields.io/badge/arXiv-2602.12654-b31b1b?style=flat-square&logo=arxiv" alt="Paper">
+  <a href="https://www.researchgate.net/publication/403651344_Visualizing_Deep_Agents_in_Long-Horizon_Tasks_Towards_Explainable_and_Trustworthy_Agentic_AI">
+    <img src="https://img.shields.io/badge/ResearchGate-Publication-00ccbb?style=flat-square&logo=researchgate" alt="ResearchGate Paper">
   </a>
 </p>
 
@@ -27,10 +27,9 @@ In this work, we propose a **4D visualization** framework (Temporal, Cognitive, 
 ## Demo Video
 
 <div align="center">
-  
-[![RepoLearn Demo - Click to Watch](https://img.youtube.com/vi/s3U6E9o94gk/maxresdefault.jpg)](https://www.youtube.com/watch?v=s3U6E9o94gk)
 
-**▶️ Click the image above to watch the full demo on YouTube**
+[![Watch the RepoLearn Demo](assets/video_play.png)](https://www.youtube.com/watch?v=s3U6E9o94gk)
+
 
 </div>
 
