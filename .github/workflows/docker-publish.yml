@@ -3,6 +3,10 @@ name: Docker Publish
 on:
   release:
     types: [published]
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
