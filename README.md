@@ -12,7 +12,7 @@
   </a>
 </p>
 
-This repository contains the official implementation of the paper **"Visualizing Deep Agents in Long-Horizon Tasks: Towards Explainable and Trustworthy Agentic AI"**.
+This repository contains the official implementation of the paper **"Visualizing Deep Agents in Long-Horizon Tasks: Towards Explainable and Trustworthy Agentic AI",** accepted in "International Joint Conference on Artificial Intelligence" (IJCAI'26-Demo).
 
 In this work, we propose a **4D visualization** framework (Temporal, Cognitive, Hierarchical, and Spatial) designed to make autonomous Deep Agents radically observable. We integrated this dashboard into **RepoLearn**, a tool that accepts any GitHub repository URL and autonomously generates comprehensive markdown tutorials to onboard both users and developers.
 
@@ -35,6 +35,7 @@ In this work, we propose a **4D visualization** framework (Temporal, Cognitive, 
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - Python 3.12+
 - [LangGraph CLI](https://langchain-ai.github.io/langgraph/tutorials/langgraph-platform/local-server/) (`uv tool install langgraph-cli[inmem]`)
@@ -117,7 +118,6 @@ Alternatively, run both services at once (requires `gnome-terminal` or `xterm`):
   </tr>
 </table>
 
-
 ## License
 
 MIT
@@ -127,10 +127,13 @@ MIT
 If you use this work in your research, please cite:
 
 ```bibtex
-@article{rafiei2026repolearn,
-  title={RepoLearn: Automated Codebase Comprehension through Multidimensional Deep Agent Observability},
-  author={Rafiei, Amirikia},
-  journal={arXiv preprint},
-  year={2026}
+@inproceedings{rafiei2026visualizing,
+  title={Visualizing Deep Agents in Long-Horizon Tasks: Towards Explainable and Trustworthy Agentic AI},
+  author={Rafiei Oskooei, Amirkia and Aktas, Mehmet},
+  booktitle={Proceedings of the 35th International Joint Conference on Artificial Intelligence (IJCAI-26)},
+  series={Demo Track},
+  year={2026},
+  doi={10.13140/RG.2.2.26258.00968},
+  url={https://www.researchgate.net/publication/403651344_Visualizing_Deep_Agents_in_Long-Horizon_Tasks_Towards_Explainable_and_Trustworthy_Agentic_AI}
 }
 ```
