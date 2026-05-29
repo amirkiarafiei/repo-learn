@@ -116,6 +116,12 @@ Alternatively, run both services at once (requires `gnome-terminal` or `xterm`):
       <br/><b>Figure 4:</b> <b>Multidimensional Observability.</b> Radical transparency across the four agentic pillars: Spatial, Hierarchical, Temporal, and Cognitive.
     </td>
   </tr>
+  <tr>
+    <td colspan="3" align="center">
+      <img src="assets/dimensions.png" alt="Visualization Dimensions" width="100%"/>
+      <br/><b>Figure 4:</b> <b>4D Visualization</b>
+    </td>
+  </tr>
 </table>
 
 ## License
